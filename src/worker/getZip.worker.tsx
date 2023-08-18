@@ -1,11 +1,35 @@
 /* eslint-disable no-restricted-globals */
 import JSZip from 'jszip'
 import JSZipUtils from './jszip-utils.for_worker';
-import { errorMessage } from '../cgi/error';
-async function d() {
-     self.postMessage([JSZip.toString(),JSZipUtils.toString()]);
+
+export type Worker_getZipState = 'ready' | 'downloading' | 'loading' | 'done' | 'error'
+interface Worker_getZipMessage {
+     state: Worker_getZipState
+     resourcePath?: string,
+     percent?: number,
+     error?: any
 }
-self.onmessage = (e) => d();
+function postMessage(e: Worker_getZipMessage) {
+     self.postMessage(e)
+}
+
+export type Worker_getZipProps = { url: string }
+async function d(props: Worker_getZipProps) {
+     const { url } = props
+     postMessage({ state: 'ready' });
+     const a = await (new JSZip.external.Promise(function (resolve, reject) {
+          postMessage({ state: 'downloading', resourcePath: url, percent: 0 })
+          JSZipUtils.getBinaryContent(url, {
+               callback: function (err: any, data: unknown) {
+                    if (err) reject(err);
+                    else resolve(data);
+               },
+               progress: (e: { percent: number; }) =>
+                    postMessage({ state: "downloading", resourcePath: url, percent: e.percent })
+          });
+     }) as Promise<unknown>).catch((error) => postMessage({ state: 'error', error }))
+}
+self.onmessage = (e) => d(e.data);
 
 // async function d(zip_path) {
 //      try {

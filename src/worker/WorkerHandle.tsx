@@ -1,24 +1,27 @@
+import { imurl } from ".."
+import { Worker_getZipProps, Worker_getZipState } from "./getZip.worker"
 type WorkerState = 'ready' | 'working' | 'done' | 'error'
-interface WorkerMessage {
-    state: WorkerState
+export interface WorkerMessage {
+    state: WorkerState | Worker_getZipState
     [key: string]: any
 }
+type WorkerOnmessage = (msg: WorkerMessage) => void | any
 let lastWorkerID = 0x1234
 export class WorkerHandle {
     ID: number
-    functionName: string
+    functionName: WorkerNames
     state: WorkerState
     lastMessage?: WorkerMessage
     totalMessage: WorkerMessage
     worker: Worker
-    constructor(fnName: string, props: {}, onmessage: (msg: WorkerMessage) => void | any) {
+    constructor(fnName: WorkerNames, props: {}, onmessage: WorkerOnmessage) {
         this.ID = ++lastWorkerID
         this.functionName = fnName
         this.state = 'ready'
         this.totalMessage = {
             state: 'ready'
         }
-        this.worker = new Worker(workerRecord[fnName].url)
+        this.worker = new Worker(workerRecord[fnName].getUrl())
         this.worker.onmessage = e => {
             const msg: WorkerMessage = e.data;
             this.lastMessage = msg
@@ -26,13 +29,17 @@ export class WorkerHandle {
             this.totalMessage = { ...this.totalMessage, ...msg } // co?
             onmessage(msg)
         }
+        this.worker.postMessage(props)
 
     }
 }
-interface workerInfo { url: URL, states: { [key: string]: WorkerState } }
-const workerRecord: { [functionName: string]: workerInfo } = {
+
+
+type WorkerNames = 'getZip'
+interface workerInfo { getUrl:()=>URL, states: { [key: string]: WorkerState } }
+export const workerRecord: { [fnName in WorkerNames]: workerInfo } = {
     'getZip': {
-        url: new URL('./getZip.worker', import.meta.url),
+        getUrl: ()=>new URL('./getZip.worker', import.meta.url),
         states: {
             'ready': 'ready',
             'downloading': 'working',
@@ -40,5 +47,11 @@ const workerRecord: { [functionName: string]: workerInfo } = {
             'done': 'done',
             'error': 'error'
         }
+    }
+} as const
+
+export class Worker_getZip extends WorkerHandle {
+    constructor(props: Worker_getZipProps, onmessage: WorkerOnmessage) {
+        super('getZip', props, onmessage)
     }
 }
