@@ -1,5 +1,5 @@
 /* eslint-disable no-restricted-globals */
-import JSZip, { filter } from 'jszip'
+import JSZip from 'jszip'
 import JSZipUtils from './jszip-utils.for_worker';
 import { FileSuffix, fileSuffixMap } from '../cgi/records';
 export type Worker_getZipState = 'ready' | 'downloading' | 'loading' | 'done' | 'error'
@@ -60,12 +60,10 @@ async function d(props: Worker_getZipProps) {
           const failedFileNameList = Array.from(fileNameSet).filter(name => !res[name])
           postMessage({ state: "done", data: res, failedFileNameList, loaded, total ,text: `资源包加载完成！`});
      } catch (error) {
-          postMessage({ state: 'error', error , text: `资源包下载完成，开始加载...`})
+          postMessage({ state: 'error', error , text: `资源加载出错！`})
      }
 }
 self.onmessage = (e) => d(e.data);
-
-// async function d(zip_path) {
 //      try {
 //          const a = await new JSZip.external.Promise(function (resolve, reject) {
 //              self.postMessage({ state: "downloading", resourcePath: zip_path, percent: 0 });

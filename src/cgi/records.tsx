@@ -1,5 +1,5 @@
 import { resourceBasePath } from "../config";
-import { Worker_getZip } from "../worker/WorkerHandle";
+import { WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
 import { Worker_getZipState } from "../worker/getZip.worker";
 
 export type FileSuffix = 'json' | 'zip' | 'png' | 'gif' | 'jpeg' | 'jpg' | 'mp3' | 'aac' | 'oga' | 'ogg'
@@ -64,27 +64,28 @@ export class PackageInfo {
   }
 }
 export interface PackageInfo {
-  load: () => Promise<any>
+  load: (onStepFuns: { [step in Worker_getZipState]: (msg: WorkerMessage) => void }) => Promise<any>
 }
 
 export interface loaderMsg {
 
 }
-PackageInfo.prototype.load = function () {
-  // 补充实现
+PackageInfo.prototype.load = function (onStepFuns) {
   return new Promise((resolve, reject) => {
     new Worker_getZip({
       url: this.resourcePath.toString(),
       // fileNameSet: new Set(['_h_title.png', '霂LOGO.png', 'bg_0.png', 'bg_1.png'])
       fileNameSet: new Set(this.fileKeyNameMap.map(([key, name]) => name))
     }, (msg) => {
-      switch (msg.state as Worker_getZipState) {
-        case "ready":
-        case "downloading":
-        case "loading":
-        case "done":
-        case "error":
-      }
+      // switch (msg.state as Worker_getZipState) {
+      //   case "ready":
+      //   case "downloading":
+      //   case "loading":
+      //   case "done":
+      //   case "error":
+      // }
+      const todo = onStepFuns[msg.state as Worker_getZipState]
+      typeof todo === 'function' && todo(msg)
       console.log(msg)
     })
     resolve('');
