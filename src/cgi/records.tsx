@@ -1,4 +1,6 @@
 import { resourceBasePath } from "../config";
+import { Worker_getZip } from "../worker/WorkerHandle";
+import { Worker_getZipState } from "../worker/getZip.worker";
 
 export type FileSuffix = 'json' | 'zip' | 'png' | 'gif' | 'jpeg' | 'jpg' | 'mp3' | 'aac' | 'oga' | 'ogg'
 export type FileType = 'application' | 'image' | 'audio' | 'unknow'
@@ -33,28 +35,32 @@ export namespace FileType {
 export class PackageInfo {
   key!: string
   state!: 'waiting' | 'downloading' | 'loading' | 'done' | 'error'
-  resourcePath!: URL;
+  resourcePath!: URL
   total?: number
-  loadedCount?: number
+  loaded?: number
   tag?: string
-  fileRecord?: any
+  fileKeyNameMap!: [string, string][]
   constructor(packageInfo: PackageInfo)
-  constructor(key: string, url?: URL)
-  constructor(args_0: PackageInfo | string, args_1?: URL) {
+  constructor(key: string, url?: URL, fileKeyNameMap?: [string, string][])
+  constructor(args_0: PackageInfo | string, args_1?: URL, args_2?: [string, string][]) {
     if (args_0 instanceof PackageInfo) {
       const packageInfo: PackageInfo = args_0;
       let key: keyof PackageInfo
       for (key in packageInfo)
-        this[key] = packageInfo[key]
+        this[key] = packageInfo[key] as never & any
       return
     }
-    else {
-      const [key, url] = [args_0, args_1];
+    else if (
+      args_1 instanceof URL && args_2 instanceof Object
+    ) {
+      const [key, url, fileKeyNameMap] = [args_0, args_1, args_2];
       this.state = 'waiting'
       this.key = key
       this.resourcePath = url as URL
+      this.fileKeyNameMap = fileKeyNameMap as [string, string][]
       return
     }
+    else throw new Error(`构造PackageInfo时传入错误的参数:\n${JSON.stringify(Array.from(arguments), null, 2)}`)
   }
 }
 export interface PackageInfo {
@@ -67,6 +73,20 @@ export interface loaderMsg {
 PackageInfo.prototype.load = function () {
   // 补充实现
   return new Promise((resolve, reject) => {
+    new Worker_getZip({
+      url: this.resourcePath.toString(),
+      // fileNameSet: new Set(['_h_title.png', '霂LOGO.png', 'bg_0.png', 'bg_1.png'])
+      fileNameSet: new Set(this.fileKeyNameMap.map(([key, name]) => name))
+    }, (msg) => {
+      switch (msg.state as Worker_getZipState) {
+        case "ready":
+        case "downloading":
+        case "loading":
+        case "done":
+        case "error":
+      }
+      console.log(msg)
+    })
     resolve('');
   }).then(() => console.log(123))
 }
@@ -104,7 +124,7 @@ export class FileInfo {
   fileName: string
   base64_type: string
   base64_code: string
-  static getBase64(fileKey: string ){
+  static getBase64(fileKey: string) {
     return fileRecord[fileKey].getBase64();
   }
   constructor(key: string, fromPackage: string, fileName: string, base64_code?: string | undefined) {
@@ -141,7 +161,7 @@ export class CharaInfo {
   key: string
   name: string
   pic: Record<string, string>
-  static getCharaPicBase64(key: string,style: string ){
+  static getCharaPicBase64(key: string, style: string) {
     return FileInfo.getBase64(charaRecord[key].pic[style])
   }
   constructor(key: string, name: string, pic: Record<string, string>) {

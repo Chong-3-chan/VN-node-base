@@ -1,4 +1,3 @@
-import { imurl } from ".."
 import { Worker_getZipProps, Worker_getZipState } from "./getZip.worker"
 type WorkerState = 'ready' | 'working' | 'done' | 'error'
 export interface WorkerMessage {
@@ -21,7 +20,7 @@ export class WorkerHandle {
         this.totalMessage = {
             state: 'ready'
         }
-        this.worker = new Worker(workerRecord[fnName].getUrl())
+        this.worker = workerRecord[fnName].getWorker()
         this.worker.onmessage = e => {
             const msg: WorkerMessage = e.data;
             this.lastMessage = msg
@@ -34,12 +33,16 @@ export class WorkerHandle {
     }
 }
 
-
+export function newWorker() {
+    const wk = new Worker(new URL('./getZip.worker', import.meta.url))
+    wk.onmessage = (e) => console.log(e.data)
+    wk.postMessage({});
+}
 type WorkerNames = 'getZip'
-interface workerInfo { getUrl:()=>URL, states: { [key: string]: WorkerState } }
+interface workerInfo { getWorker: () => any, states: { [key: string]: WorkerState } }
 export const workerRecord: { [fnName in WorkerNames]: workerInfo } = {
     'getZip': {
-        getUrl: ()=>new URL('./getZip.worker', import.meta.url),
+        getWorker: () => new Worker(new URL('./getZip.worker', import.meta.url)),
         states: {
             'ready': 'ready',
             'downloading': 'working',
