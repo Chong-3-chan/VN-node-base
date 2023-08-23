@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import JSZipUtils from './jszip-utils.for_worker';
 import { FileSuffix, fileSuffixMap } from '../cgi/records';
 export type Worker_getZipState = 'ready' | 'downloading' | 'loading' | 'done' | 'error'
-interface Worker_getZipMessage {
+export interface Worker_getZipMessage {
      state: Worker_getZipState
      text: string
      resourcePath?: string,
@@ -59,41 +59,10 @@ async function d(props: Worker_getZipProps) {
           );
           const failedFileNameList = Array.from(fileNameSet).filter(name => !res[name])
           postMessage({ state: "done", data: res, failedFileNameList, loaded, total ,text: `资源包加载完成！`});
+          self.close()
      } catch (error) {
           postMessage({ state: 'error', error , text: `资源加载出错！`})
+          self.close()
      }
 }
 self.onmessage = (e) => d(e.data);
-//      try {
-//          const a = await new JSZip.external.Promise(function (resolve, reject) {
-//              self.postMessage({ state: "downloading", resourcePath: zip_path, percent: 0 });
-//              JSZipUtils.getBinaryContent(zip_path, {
-//                  callback: function (err, data) {
-//                      if (err) reject(err);
-//                      else resolve(data);
-//                  },
-//                  progress: e => self.postMessage({ state: "downloading", resourcePath: zip_path, percent: e.percent })
-//              });
-//          }).catch(err => { throw err });
-//          self.postMessage({ state: "loading", loaded: 0, total: null });
-//          const b = await JSZip.loadAsync(a);
-//          let fileNameList = Object.keys(b.files), loaded = 0, total = fileNameList.length, files = {};
-//          self.postMessage({ state: "loading", loaded: loaded, total: total });
-//          const c = await Promise.allSettled(
-//              fileNameList.map((e) => b.file(e).async('base64')
-//                  .then((code) => {
-//                      files[e] = {};
-//                      const suffix = e.slice(e.lastIndexOf('.') + 1);
-//                      console.log(suffix,blobType[suffix], "bbbb")
-//                      if (!blobType[suffix]) throw suffix + ':未定义的后缀';
-//                      files[e].type = blobType[suffix];
-//                      files[e].data = `data:${files[e].type};base64,${code}`;
-//                      self.postMessage({ state: "loading", loaded: ++loaded, total: total });
-//                  }))
-//          );
-//          self.postMessage({ state: "done", data: files, total });
-//      } catch (err) {
-//          self.postMessage({ state: "error", error: err });
-//          throw err;
-//      }
-//  };

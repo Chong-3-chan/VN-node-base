@@ -1,7 +1,8 @@
-import { Worker_getZipProps, Worker_getZipState } from "./getZip.worker"
+import { Worker_getZipMessage, Worker_getZipProps, Worker_getZipState } from "./getZip.worker"
 type WorkerState = 'ready' | 'working' | 'done' | 'error'
 export interface WorkerMessage {
     state: WorkerState | Worker_getZipState
+    text: string
     [key: string]: any
 }
 type WorkerOnmessage = (msg: WorkerMessage) => void | any
@@ -18,7 +19,8 @@ export class WorkerHandle {
         this.functionName = fnName
         this.state = 'ready'
         this.totalMessage = {
-            state: 'ready'
+            state: 'ready',
+            text: '准备中'
         }
         this.worker = workerRecord[fnName].getWorker()
         this.worker.onmessage = e => {
@@ -29,7 +31,6 @@ export class WorkerHandle {
             onmessage(msg)
         }
         this.worker.postMessage(props)
-
     }
 }
 
@@ -53,8 +54,9 @@ export const workerRecord: { [fnName in WorkerNames]: workerInfo } = {
     }
 } as const
 
+type Worker_getZipOnmessage = (msg: Worker_getZipMessage) => void | any
 export class Worker_getZip extends WorkerHandle {
-    constructor(props: Worker_getZipProps, onmessage: WorkerOnmessage) {
-        super('getZip', props, onmessage)
+    constructor(props: Worker_getZipProps, onmessage: Worker_getZipOnmessage) {
+        super('getZip', props, onmessage as WorkerOnmessage)
     }
 }

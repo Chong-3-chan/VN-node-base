@@ -19,9 +19,10 @@ root.render(
 // const wk = new Worker(new URL('./worker/getZip.worker',import.meta.url))
 // wk.onmessage = (e)=>console.log(e.data)
 // wk.postMessage({});
-new PackageInfo('1',
-  new URL('https://chong-chan.cn/resource/sample3/package/home_SAMPLE.zip'),
-  [["_H_BG_0","bg_0.png"],["_H_BG_1","bg_1.png"],["_H_LOGO","霂LOGO.png"],["_H_TITLE","_h_title.png"]]).load()
+// new PackageInfo('1',
+//   new URL('https://chong-chan.cn/resource/sample3/package/home_SAMPLE.zip'),
+//   {'_H_BG_0':'bg_0.png','_H_BG_1':'bg_1.png','_H_LOGO':'霂LOGO.png','_H_TITLE':'_h_title.png'}).load({})
+PackageInfo.createPackageInfo('pk1','package/home_SAMPLE.zip',{'_H_BG_0':'bg_0.png','_H_BG_1':'bg_1.png','_H_LOGO':'霂LOGO.png','_H_TITLE':'_h_title.png'}).load({})
 // const wk = new Worker_getZip({url:'https://chong-chan.cn/resource/sample3/package/home_SAMPLE.zip'},(m)=>console.log(m))
 // console.log(workerRecord['getZip'].getUrl(),new URL('./worker/getZip.worker',import.meta.url))
 // new WorkerHandle('getZip',{url:'https://chong-chan.cn/resource/sample3/package/home_SAMPLE.zip'},(m)=>console.log(m))

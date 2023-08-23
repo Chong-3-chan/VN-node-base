@@ -1,6 +1,6 @@
 import { resourceBasePath } from "../config";
-import { WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
-import { Worker_getZipState } from "../worker/getZip.worker";
+import { WorkerHandle, WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
+import { Worker_getZipResponse, Worker_getZipState } from "../worker/getZip.worker";
 
 export type FileSuffix = 'json' | 'zip' | 'png' | 'gif' | 'jpeg' | 'jpg' | 'mp3' | 'aac' | 'oga' | 'ogg'
 export type FileType = 'application' | 'image' | 'audio' | 'unknow'
@@ -22,27 +22,18 @@ export namespace FileType {
     return (fileSuffixMap[suffix]?.split('/', 1)[0] ?? 'unknow') as FileType;
   }
 }
-
-// interface PackageInfo {
-//   readonly key: string,
-//   resourcePath: URL,
-//   state: 'waiting' | 'downloading' | 'loading' | 'done' | 'error',
-//   total?: number,
-//   loaded?: number,
-//   data?: unknown,
-//   load: (doWithMsg:(msg:loaderMsg)=>void)=>Promise<any>
-// }
 export class PackageInfo {
   key!: string
-  state!: 'waiting' | 'downloading' | 'loading' | 'done' | 'error'
+  state!: 'waiting' | 'ready' | 'downloading' | 'loading' | 'done' | 'error'
   resourcePath!: URL
-  total?: number
+  fileKeyNameMap!: Record<string, string>
+  total?: number | null
   loaded?: number
-  tag?: string
-  fileKeyNameMap!: [string, string][]
+  error?: any
+  worker?: WorkerHandle
   constructor(packageInfo: PackageInfo)
-  constructor(key: string, url?: URL, fileKeyNameMap?: [string, string][])
-  constructor(args_0: PackageInfo | string, args_1?: URL, args_2?: [string, string][]) {
+  constructor(key: string, url?: URL, fileKeyNameMap?: Record<string, string>)
+  constructor(args_0: PackageInfo | string, args_1?: URL, args_2?: Record<string, string>) {
     if (args_0 instanceof PackageInfo) {
       const packageInfo: PackageInfo = args_0;
       let key: keyof PackageInfo
@@ -57,64 +48,102 @@ export class PackageInfo {
       this.state = 'waiting'
       this.key = key
       this.resourcePath = url as URL
-      this.fileKeyNameMap = fileKeyNameMap as [string, string][]
+      this.fileKeyNameMap = fileKeyNameMap as Record<string, string>
       return
     }
     else throw new Error(`构造PackageInfo时传入错误的参数:\n${JSON.stringify(Array.from(arguments), null, 2)}`)
   }
 }
 export interface PackageInfo {
-  load: (onStepFuns: { [step in Worker_getZipState]: (msg: WorkerMessage) => void }) => Promise<any>
+  load: (onStepFuns: { [step in Worker_getZipState]?: (msg: WorkerMessage) => void }) => Promise<any>
 }
 
 export interface loaderMsg {
 
 }
-PackageInfo.prototype.load = function (onStepFuns) {
-  return new Promise((resolve, reject) => {
-    new Worker_getZip({
+PackageInfo.prototype.load = async function (onStepFuns) {
+  // todo:hit DB?helper
+  const data: Worker_getZipResponse = await new Promise((resolve, reject) => {
+    this.worker = new Worker_getZip({
       url: this.resourcePath.toString(),
-      // fileNameSet: new Set(['_h_title.png', '霂LOGO.png', 'bg_0.png', 'bg_1.png'])
-      fileNameSet: new Set(this.fileKeyNameMap.map(([key, name]) => name))
+      fileNameSet: new Set(Object.entries(this.fileKeyNameMap).map(([key, name]) => name))
     }, (msg) => {
-      // switch (msg.state as Worker_getZipState) {
-      //   case "ready":
-      //   case "downloading":
-      //   case "loading":
-      //   case "done":
-      //   case "error":
-      // }
+      switch (msg.state) {
+        case "ready":
+          this.state = "ready"
+          break
+        case "downloading":
+          this.state = "downloading"
+          break
+        case "loading":
+          this.state = "loading"
+          this.total = msg.total
+          this.loaded = msg.loaded
+          break
+        case "done":
+          this.state = "done"
+          resolve(msg.data);
+          break
+        case "error":
+          this.state = "error"
+          this.error = msg.error
+          reject(msg.error);
+          break
+        default: break
+      }
       const todo = onStepFuns[msg.state as Worker_getZipState]
       typeof todo === 'function' && todo(msg)
-      console.log(msg)
+      console.log(this, msg.text)
     })
-    resolve('');
-  }).then(() => console.log(123))
+  }).catch((error) => {
+    throw new Error(error)
+  }) as Worker_getZipResponse;
+  const fileNameKeysMap = (() => {
+    const re: { [filename: string]: string | string[] } = {}
+    Object.entries(this.fileKeyNameMap).forEach(([key, name]) => {
+      if (re[name] === void 0) re[name] = key
+      else Array.isArray(re[name]) ? (re[name] as string[]).push(name) : (re[name] = [re[name] as string, name])
+    })
+    return re
+  })()
+  const allFileInfosFromPackage = (() => {
+    const re: FileInfo[] = []
+    Object.entries(data).forEach(([name, code]) => {
+      Array.isArray(fileNameKeysMap[name]) ?
+        (fileNameKeysMap[name] as string[]).forEach(key => re.push(new FileInfo(key, this.key, name, code)))
+        : re.push(new FileInfo(fileNameKeysMap[name] as string, this.key, name, code))
+    })
+    return re
+  })()
+  KKVRecord.push(fileRecord, allFileInfosFromPackage)
 }
 
 export namespace PackageInfo {
-  function createPackageInfo(packageInfo: PackageInfo): PackageInfo
-  function createPackageInfo(packageKey: string, relativePath?: string): PackageInfo
-  function createPackageInfo(args_0: PackageInfo | string, args_1?: string): PackageInfo {
+  export function createPackageInfo(packageInfo: PackageInfo): PackageInfo
+  export function createPackageInfo(packageKey: string, relativePath?: string, fileKeyNameMap?: Record<string, string>): PackageInfo
+  export function createPackageInfo(args_0: PackageInfo | string, args_1?: string, args_2?: Record<string, string>): PackageInfo {
     if (args_0 instanceof PackageInfo) {
       const [packageInfo] = [args_0];
-      return new PackageInfo(packageInfo)
+      KKVRecord.push(packageRecord, [packageInfo])
+      return packageRecord[packageInfo.key]
     }
     else {
-      const [packageKey, relativePath] = [args_0, args_1]
-      return new PackageInfo(packageKey, new URL(resourceBasePath.toString() + relativePath))
+      const [packageKey, relativePath, fileKeyNameMap] = [args_0, args_1, args_2]
+      const newInfo = new PackageInfo(packageKey, new URL(resourceBasePath.toString() + relativePath), fileKeyNameMap)
+      KKVRecord.push(packageRecord, [newInfo])
+      return packageRecord[newInfo.key]
     }
   }
 }
 // key-value(includes key)
 export class KKVRecord<T extends { key: string }> implements Record<string, T>{
   [key: string]: T
-  static push<T extends { key: string }>(record: KKVRecord<T>, tList: Array<T>) {
-    for (const obj of tList)
+  static push<T extends { key: string }>(record: KKVRecord<T>, tList: T[]) {
+    for (const obj of tList as T[])
       record[obj.key] = obj
   };
   constructor(tList?: Array<T> | undefined) {
-    if (tList !== undefined)
+    if (tList !== void 0)
       KKVRecord.push(this, tList)
   }
 }
