@@ -1,7 +1,7 @@
 /* eslint-disable no-restricted-globals */
 import JSZip from 'jszip'
 import JSZipUtils from './jszip-utils.for_worker';
-import { FileSuffix, fileSuffixMap } from '../cgi/records';
+import { FileSuffix, fileSuffixMap } from '../class/Records';
 export type Worker_getZipState = 'ready' | 'downloading' | 'loading' | 'done' | 'error'
 export interface Worker_getZipMessage {
      state: Worker_getZipState

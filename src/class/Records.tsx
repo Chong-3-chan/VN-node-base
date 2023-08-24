@@ -1,4 +1,5 @@
 import { resourceBasePath } from "../config";
+import { fileRecord, packageRecord, charaRecord, KKVRecord } from "../data/data";
 import { WorkerHandle, WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
 import { Worker_getZipResponse, Worker_getZipState } from "../worker/getZip.worker";
 
@@ -22,6 +23,9 @@ export namespace FileType {
     return (fileSuffixMap[suffix]?.split('/', 1)[0] ?? 'unknow') as FileType;
   }
 }
+
+
+/******************************* PackageInfo ********************************/
 export class PackageInfo {
   key!: string
   state!: 'waiting' | 'ready' | 'downloading' | 'loading' | 'done' | 'error'
@@ -56,10 +60,6 @@ export class PackageInfo {
 }
 export interface PackageInfo {
   load: (onStepFuns: { [step in Worker_getZipState]?: (msg: WorkerMessage) => void }) => Promise<any>
-}
-
-export interface loaderMsg {
-
 }
 PackageInfo.prototype.load = async function (onStepFuns) {
   // todo:hit DB?helper
@@ -116,8 +116,8 @@ PackageInfo.prototype.load = async function (onStepFuns) {
     return re
   })()
   KKVRecord.push(fileRecord, allFileInfosFromPackage)
+  Object.freeze(this)
 }
-
 export namespace PackageInfo {
   export function createPackageInfo(packageInfo: PackageInfo): PackageInfo
   export function createPackageInfo(packageKey: string, relativePath?: string, fileKeyNameMap?: Record<string, string>): PackageInfo
@@ -135,19 +135,10 @@ export namespace PackageInfo {
     }
   }
 }
-// key-value(includes key)
-export class KKVRecord<T extends { key: string }> implements Record<string, T>{
-  [key: string]: T
-  static push<T extends { key: string }>(record: KKVRecord<T>, tList: T[]) {
-    for (const obj of tList as T[])
-      record[obj.key] = obj
-  };
-  constructor(tList?: Array<T> | undefined) {
-    if (tList !== void 0)
-      KKVRecord.push(this, tList)
-  }
-}
+/******************************* PackageInfo END ********************************/
 
+
+/******************************* FileInfo ********************************/
 export class FileInfo {
   key: string
   fromPackege: string
@@ -186,7 +177,10 @@ FileInfo.prototype.getBase64 = function () {
 FileInfo.prototype.getPath = function () {
   return `${this.fromPackege}/${this.fileName}`
 }
+/******************************* FileInfo END ********************************/
 
+
+/******************************* CharaInfo ********************************/
 export class CharaInfo {
   key: string
   name: string
@@ -200,7 +194,28 @@ export class CharaInfo {
     this.pic = pic
   }
 }
+/******************************* CharaInfo END ********************************/
 
-export const packageRecord = new KKVRecord<PackageInfo>()
-export const fileRecord = new KKVRecord<FileInfo>()
-export const charaRecord = new KKVRecord<CharaInfo>()
+
+/******************************* TipsGroup ********************************/
+export class Tips {
+  title: string
+  text: string
+  constructor(title: string, text: string) {
+    this.title = title
+    this.text = text
+    Object.freeze(this)
+  }
+}
+export class TipsGroup {
+  key: string
+  name: string
+  list: Tips[]
+  constructor(key: string, name: string, titleTextList: [title: string, text: string][]) {
+    this.key = key
+    this.name = name
+    this.list = titleTextList.map(([title, text]) => new Tips(title, text))
+  }
+}
+/******************************* TipsGroup END ********************************/
+
