@@ -1,3 +1,5 @@
+
+import { VM } from "../class/Book"
 import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from "../class/Records"
 
 // key-value(includes key)
@@ -17,3 +19,6 @@ export const packageRecord = new KKVRecord<PackageInfo>()
 export const fileRecord = new KKVRecord<FileInfo>()
 export const charaRecord = new KKVRecord<CharaInfo>()
 export const tipsGroupRecord = new KKVRecord<TipsGroup>()
+
+export const staticStoryRecord = new KKVRecord<VM.StaticStory>()
+export const staticBookRecord = new KKVRecord<VM.StaticBook>()
