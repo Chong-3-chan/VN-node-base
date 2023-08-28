@@ -2,6 +2,7 @@ import { resourceBasePath } from "../config";
 import { fileRecord, packageRecord, charaRecord, KKVRecord } from "../data/data";
 import { WorkerHandle, WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
 import { Worker_getZipResponse, Worker_getZipState } from "../worker/getZip.worker";
+import { FixedArray } from "./Book";
 
 export type FileSuffix = 'json' | 'zip' | 'png' | 'gif' | 'jpeg' | 'jpg' | 'mp3' | 'aac' | 'oga' | 'ogg'
 export type FileType = 'application' | 'image' | 'audio' | 'unknow'
@@ -211,7 +212,7 @@ export class TipsGroup {
   key: string
   name: string
   list: Tips[]
-  constructor(key: string, name: string, titleTextList: [title: string, text: string][]) {
+  constructor(key: string, name: string, titleTextList: FixedArray<string,2>[]) {
     this.key = key
     this.name = name
     this.list = titleTextList.map(([title, text]) => new Tips(title, text))
