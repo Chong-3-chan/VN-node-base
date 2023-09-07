@@ -1,7 +1,7 @@
-import { Worker_getZipMessage, Worker_getZipProps, Worker_getZipState } from "./getZip.worker"
+import * as GetZip from "./getZip.export"
 type WorkerState = 'ready' | 'working' | 'done' | 'error'
 export interface WorkerMessage {
-    state: WorkerState | Worker_getZipState
+    state: WorkerState | GetZip.Worker_getZipState
     text: string
     [key: string]: any
 }
@@ -34,14 +34,9 @@ export class WorkerHandle {
     }
 }
 
-export function newWorker() {
-    const wk = new Worker(new URL('./getZip.worker', import.meta.url))
-    wk.onmessage = (e) => console.log(e.data)
-    wk.postMessage({});
-}
 type WorkerNames = 'getZip'
-interface workerInfo { getWorker: () => any, states: { [key: string]: WorkerState } }
-export const workerRecord: { [fnName in WorkerNames]: workerInfo } = {
+interface WorkerInfo { getWorker: () => Worker, states: Record<string, WorkerState> }
+export const workerRecord: Record<WorkerNames, WorkerInfo> = {
     'getZip': {
         getWorker: () => new Worker(new URL('./getZip.worker', import.meta.url)),
         states: {
@@ -54,9 +49,9 @@ export const workerRecord: { [fnName in WorkerNames]: workerInfo } = {
     }
 } as const
 
-type Worker_getZipOnmessage = (msg: Worker_getZipMessage) => void | any
+type Worker_getZipOnmessage = (msg: GetZip.Worker_getZipMessage) => void | any
 export class Worker_getZip extends WorkerHandle {
-    constructor(props: Worker_getZipProps, onmessage: Worker_getZipOnmessage) {
+    constructor(props: GetZip.Worker_getZipProps, onmessage: Worker_getZipOnmessage) {
         super('getZip', props, onmessage as WorkerOnmessage)
     }
 }

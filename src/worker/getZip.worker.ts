@@ -1,28 +1,13 @@
 /* eslint-disable no-restricted-globals */
 import JSZip from 'jszip'
 import JSZipUtils from './jszip-utils.for_worker';
-import { FileSuffix, fileSuffixMap } from '../class/Records';
-export type Worker_getZipState = 'ready' | 'downloading' | 'loading' | 'done' | 'error'
-export interface Worker_getZipMessage {
-     state: Worker_getZipState
-     text: string
-     resourcePath?: string,
-     percent?: number,
-     error?: any,
-     loaded?: number,
-     total?: number | null,
-     data?: Worker_getZipResponse,
-     failedFileNameList?: string[]
-}
-function postMessage(e: Worker_getZipMessage) {
+import * as GetZip from './getZip.export';
+function postMessage(e: GetZip.Worker_getZipMessage) {
      self.postMessage(e)
 }
 
-export type Worker_getZipProps = { url: string, fileNameSet: Set<string> }
-
-export type Worker_getZipResponse = { [fileName: string]: string }
-async function d(props: Worker_getZipProps) {
-     const { url, fileNameSet: fileNameSet } = props
+async function d(props: GetZip.Worker_getZipProps) {
+     const { url, fileNameSet } = props
      postMessage({ state: 'ready', text: '加载准备中...' });
      try {
           const a = await (new JSZip.external.Promise(function (resolve, reject) {
@@ -43,12 +28,12 @@ async function d(props: Worker_getZipProps) {
           let fileNameList = Array.from(fileNameSet).filter((name) => fromZip.has(name)),
                loaded = 0,
                total = fileNameList.length,
-               res: Worker_getZipResponse = {}
+               res: GetZip.Worker_getZipResponse = {}
           postMessage({ state: "loading", loaded: loaded, total: total, text: `资源包下载完成，开始加载...` })
           const c = await Promise.allSettled(
                fileNameList.map((name) => {
-                    const suffix = name.slice(name.lastIndexOf('.') + 1) as FileSuffix;
-                    const type = fileSuffixMap[suffix]
+                    const suffix = name.slice(name.lastIndexOf('.') + 1) as GetZip.FileSuffix;
+                    const type = GetZip.fileSuffixMap[suffix]
                     if (!type) throw new Error(name + ':未定义的后缀');
                     return b.file(name).async('base64')
                          .then((code: string) => {
@@ -57,7 +42,7 @@ async function d(props: Worker_getZipProps) {
                          })
                })
           );
-          const failedFileNameList = Array.from(fileNameSet).filter(name => !res[name])
+          const failedFileNameList =(Array.from(fileNameSet).filter(name => !res[name]))
           postMessage({ state: "done", data: res, failedFileNameList, loaded, total ,text: `资源包加载完成！`});
           self.close()
      } catch (error) {

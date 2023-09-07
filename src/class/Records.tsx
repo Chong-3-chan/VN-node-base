@@ -1,182 +1,221 @@
 import { resourceBasePath } from "../config";
 import { fileRecord, packageRecord, charaRecord, KKVRecord } from "../data/data";
+import { dbh } from "../handle/IndexedDB";
 import { WorkerHandle, WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
-import { Worker_getZipResponse, Worker_getZipState } from "../worker/getZip.worker";
+import * as GetZip from "../worker/getZip.export"
 import { FixedArray } from "./Book";
 
-export type FileSuffix = 'json' | 'zip' | 'png' | 'gif' | 'jpeg' | 'jpg' | 'mp3' | 'aac' | 'oga' | 'ogg'
+
 export type FileType = 'application' | 'image' | 'audio' | 'unknow'
-export const fileSuffixMap: { readonly [index in FileSuffix]: string } = {
-  json: 'application/json',
-  zip: 'application/zip',
-  png: 'image/png',
-  gif: 'image/gif',
-  jpeg: 'image/jpeg',
-  jpg: 'image/jpeg',
-  mp3: 'audio/mpeg',
-  aac: 'audio/aac',
-  oga: 'audio/ogg',
-  ogg: 'audio/ogg',
-}
 export namespace FileType {
-  // FileType.fromSuffix(_suffix)
-  export function fromSuffix(suffix: FileSuffix): FileType {
-    return (fileSuffixMap[suffix]?.split('/', 1)[0] ?? 'unknow') as FileType;
+  export function fromSuffix(suffix: GetZip.FileSuffix): FileType {
+    return (GetZip.fileSuffixMap[suffix]?.split('/', 1)[0] ?? 'unknow') as FileType;
   }
 }
 
 
 /******************************* PackageInfo ********************************/
-export class PackageInfo {
-  key!: string
-  state!: 'waiting' | 'ready' | 'downloading' | 'loading' | 'done' | 'error'
-  resourcePath!: URL
-  fileKeyNameMap!: Record<string, string>
-  total?: number | null
-  loaded?: number
+export interface PackageInfoLike {
+  key: string
+  state: 'waiting' | 'ready' | 'downloading' | 'loading' | 'done' | 'error'
+  resourcePath: string
+  fileKeyNameMap: Record<string, string>
+  // total?: number | null
+  // loaded?: number
   error?: any
   worker?: WorkerHandle
-  constructor(packageInfo: PackageInfo)
-  constructor(key: string, url?: URL, fileKeyNameMap?: Record<string, string>)
-  constructor(args_0: PackageInfo | string, args_1?: URL, args_2?: Record<string, string>) {
-    if (args_0 instanceof PackageInfo) {
-      const packageInfo: PackageInfo = args_0;
+  failedFileNameList?: string[]
+}
+export class PackageInfo implements PackageInfoLike {
+  key!: string
+  state!: 'waiting' | 'ready' | 'downloading' | 'loading' | 'done' | 'error'
+  resourcePath!: string
+  fileKeyNameMap!: Record<string, string>
+  // total?: number | null
+  // loaded?: number
+  error?: any
+  worker?: WorkerHandle
+  failedFileNameList?: string[]
+  constructor(packageInfo: PackageInfoLike)
+  constructor(key: string, url?: string, fileKeyNameMap?: Record<string, string>)
+  constructor(...args: any[]) {
+    if (args.length === 1) {
+      const packageInfo: PackageInfo = args[0];
       let key: keyof PackageInfo
       for (key in packageInfo)
-        this[key] = packageInfo[key] as never & any
+        this[key] = packageInfo[key]
       return
     }
     else if (
-      args_1 instanceof URL && args_2 instanceof Object
+      args.length === 3 &&
+      typeof args[0] === 'string' &&
+      typeof args[1] === 'string' &&
+      args[2] instanceof Object
     ) {
-      const [key, url, fileKeyNameMap] = [args_0, args_1, args_2];
+      const [key, url, fileKeyNameMap] = args;
       this.state = 'waiting'
       this.key = key
-      this.resourcePath = url as URL
-      this.fileKeyNameMap = fileKeyNameMap as Record<string, string>
+      this.resourcePath = url
+      this.fileKeyNameMap = fileKeyNameMap
+      const allFileInfosFromPackage = (() => {
+        const re: FileInfo[] = []
+        Object.entries(this.fileKeyNameMap).forEach(([key, name]) => re.push(new FileInfo(key, this.key, name)))
+        return re
+      })()
+      KKVRecord.push(fileRecord, allFileInfosFromPackage)
       return
     }
     else throw new Error(`构造PackageInfo时传入错误的参数:\n${JSON.stringify(Array.from(arguments), null, 2)}`)
   }
-}
-export interface PackageInfo {
-  load: (onStepFuns: { [step in Worker_getZipState]?: (msg: WorkerMessage) => void }) => Promise<any>
-}
-PackageInfo.prototype.load = async function (onStepFuns) {
-  // todo:hit DB?helper
-  const data: Worker_getZipResponse = await new Promise((resolve, reject) => {
-    this.worker = new Worker_getZip({
-      url: this.resourcePath.toString(),
-      fileNameSet: new Set(Object.entries(this.fileKeyNameMap).map(([key, name]) => name))
-    }, (msg) => {
-      switch (msg.state) {
-        case "ready":
-          this.state = "ready"
-          break
-        case "downloading":
-          this.state = "downloading"
-          break
-        case "loading":
-          this.state = "loading"
-          this.total = msg.total
-          this.loaded = msg.loaded
-          break
-        case "done":
-          this.state = "done"
-          resolve(msg.data);
-          break
-        case "error":
-          this.state = "error"
-          this.error = msg.error
-          reject(msg.error);
-          break
-        default: break
+  async load(onStepCallback?: { [step in GetZip.Worker_getZipState]?: (msg: WorkerMessage) => void }) {
+    const fileNameKeysMap = (() => {
+      const re: { [fileName: string]: string | string[] } = {}
+      Object.entries(this.fileKeyNameMap).forEach(([key, name]) => {
+        if (re[name] === void 0) re[name] = key
+        else Array.isArray(re[name]) ? (re[name] as string[]).push(key) : (re[name] = [re[name] as string, key])
+      })
+      return re
+    })()
+    function setInDBTrueM(fileNameList: string[]) {
+      fileNameList.forEach((fileName) => {
+        const fileKey_s = fileNameKeysMap[fileName]
+        Array.isArray(fileKey_s) ? (fileKey_s as string[]).forEach(fileKey => fileRecord[fileKey].setInDBTrue()) : fileRecord[fileKey_s].setInDBTrue();
+      })
+    }
+
+    // todo:hit helper
+    type DBfile = { path: string, fileName: string, packageKey: string, code: string }
+    const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key)
+
+    if (fromDBfiles) {
+      // todo:文件校验（md5）
+      this.worker = void 0
+      const needFileNameSet = new Set(Object.values(this.fileKeyNameMap))
+      const fileNameList: string[] = []
+      for (const { fileName } of fromDBfiles) {
+        if (needFileNameSet.has(fileName)) {
+          needFileNameSet.delete(fileName)
+          fileNameList.push(fileName)
+        }
+        else break
       }
-      const todo = onStepFuns[msg.state as Worker_getZipState]
-      typeof todo === 'function' && todo(msg)
-      console.log(this, msg.text)
-    })
-  }).catch((error) => {
-    throw new Error(error)
-  }) as Worker_getZipResponse;
-  const fileNameKeysMap = (() => {
-    const re: { [filename: string]: string | string[] } = {}
-    Object.entries(this.fileKeyNameMap).forEach(([key, name]) => {
-      if (re[name] === void 0) re[name] = key
-      else Array.isArray(re[name]) ? (re[name] as string[]).push(name) : (re[name] = [re[name] as string, name])
-    })
-    return re
-  })()
-  const allFileInfosFromPackage = (() => {
-    const re: FileInfo[] = []
-    Object.entries(data).forEach(([name, code]) => {
-      Array.isArray(fileNameKeysMap[name]) ?
-        (fileNameKeysMap[name] as string[]).forEach(key => re.push(new FileInfo(key, this.key, name, code)))
-        : re.push(new FileInfo(fileNameKeysMap[name] as string, this.key, name, code))
-    })
-    return re
-  })()
-  KKVRecord.push(fileRecord, allFileInfosFromPackage)
-  Object.freeze(this)
-}
-export namespace PackageInfo {
-  export function createPackageInfo(packageInfo: PackageInfo): PackageInfo
-  export function createPackageInfo(packageKey: string, relativePath?: string, fileKeyNameMap?: Record<string, string>): PackageInfo
-  export function createPackageInfo(args_0: PackageInfo | string, args_1?: string, args_2?: Record<string, string>): PackageInfo {
-    if (args_0 instanceof PackageInfo) {
-      const [packageInfo] = [args_0];
-      KKVRecord.push(packageRecord, [packageInfo])
-      return packageRecord[packageInfo.key]
+      if (needFileNameSet.size === 0) {
+        this.state = 'done'
+        setInDBTrueM(fileNameList)
+        console.warn('DBhit', this.key)
+        return
+      }
     }
-    else {
-      const [packageKey, relativePath, fileKeyNameMap] = [args_0, args_1, args_2]
-      const newInfo = new PackageInfo(packageKey, new URL(resourceBasePath.toString() + relativePath), fileKeyNameMap)
-      KKVRecord.push(packageRecord, [newInfo])
-      return packageRecord[newInfo.key]
-    }
+
+
+    const data: GetZip.Worker_getZipResponse = await new Promise((resolve, reject) => {
+      this.worker = new Worker_getZip({
+        url: this.resourcePath.toString(),
+        fileNameSet: new Set(Object.values(this.fileKeyNameMap))
+      }, (msg) => {
+        const onStep: Record<GetZip.Worker_getZipState, null | (() => void)> = {
+          ready: null,
+          downloading: null,
+          loading: null,
+          done: () => {
+            this.failedFileNameList = msg.failedFileNameList as string[]
+            if (this.failedFileNameList.length !== 0)
+              console.warn(`资源包 ${this.key} 下存在获取失败的文件: \n${JSON.stringify(this.failedFileNameList, null, 2)}\n将会导致以下文件无法正常获取: \n[\n${(this.failedFileNameList.map(fileName => `\t${JSON.stringify(fileNameKeysMap[fileName])} // ${fileName}\n`))}]`)
+            resolve(msg.data);
+          },
+          error: () => {
+            this.error = msg.error
+            reject(msg.error);
+          }
+        } as const
+        this.state = msg.state
+        const todo = onStep[this.state]
+        typeof todo === 'function' && (todo())
+        const callback = onStepCallback?.[this.state]
+        typeof callback === 'function' && callback(msg)
+        // console.log(this, msg.text)
+      })
+    }).then((data: any) => {
+      this.worker = void 0
+      const writeDBfilesCache: DBfile[] = []
+      const failedFileNameSet = new Set(this.failedFileNameList)
+      Object.entries(data).forEach(([name, code]) => {
+        if (!failedFileNameSet.has(name)) {
+          writeDBfilesCache.push({ path: `${this.key}/${name}`, fileName: name, packageKey: this.key, code: code as string })
+        }
+      })
+      setInDBTrueM(Object.keys(data))
+      return dbh.putM('Files', writeDBfilesCache)
+    }).catch((error) => {
+      throw new Error(error)
+    }) as GetZip.Worker_getZipResponse;
+    Object.freeze(this)
+    return [this.key, data]
   }
 }
+// export namespace PackageInfo {
+//   export function createPackageInfo(packageInfo: PackageInfo): PackageInfo
+//   export function createPackageInfo(packageKey: string, relativePath?: string, fileKeyNameMap?: Record<string, string>): PackageInfo
+//   export function createPackageInfo(args_0: PackageInfo | string, args_1?: string, args_2?: Record<string, string>): PackageInfo {
+//     if (args_0 instanceof PackageInfo) {
+//       const [packageInfo] = [args_0];
+//       KKVRecord.push(packageRecord, [packageInfo])
+//       return packageRecord[packageInfo.key]
+//     }
+//     else {
+//       const [packageKey, relativePath, fileKeyNameMap] = [args_0, args_1, args_2]
+//       const newInfo = new PackageInfo(packageKey, new URL(resourceBasePath.toString() + relativePath), fileKeyNameMap)
+//       KKVRecord.push(packageRecord, [newInfo])
+//       return packageRecord[newInfo.key]
+//     }
+//   }
+// }
 /******************************* PackageInfo END ********************************/
 
 
 /******************************* FileInfo ********************************/
 export class FileInfo {
   key: string
-  fromPackege: string
+  fromPackage: string
   fileName: string
   base64_type: string
-  base64_code: string
-  static getBase64(fileKey: string) {
-    return fileRecord[fileKey].getBase64();
+  inDB: boolean
+  // base64_code: string
+  static async getFilesBase64(fileKeyList: string[]) { // 123
+    // let outRecordFileKey = fileKeyList.find((filekey) => fileRecord[filekey] === void 0 || !fileRecord[filekey].inDB)
+    // if (outRecordFileKey) throw new Error(`FileInfo.getFilesBase64(): 未在记录的fileKey (异常值: ${outRecordFileKey})`)
+    const fileKeyUniqueList = Array.from(new Set(fileKeyList))
+
+    const outDBFileKeyList: string[] = []
+    fileKeyUniqueList.forEach(fileKey => {
+      if (fileRecord[fileKey] === void 0) throw new Error(`FileInfo.getFilesBase64(): 未在记录的fileKey (异常值: ${fileKey})`)
+      if (!fileRecord[fileKey].inDB) outDBFileKeyList.push(fileKey)
+    })
+    if (outDBFileKeyList.length !== 0) console.warn(`FileInfo.getFilesBase64(): 请求了可能未写入的文件:\n${JSON.stringify(outDBFileKeyList, null, 2)}`)
+    const resultValues = await dbh.getM('Files', fileKeyUniqueList.map((filekey) => fileRecord[filekey].getPath()))
+    return Object.fromEntries(fileKeyUniqueList.map((fileKey, i) => [fileKey, resultValues[i]]))
   }
-  constructor(key: string, fromPackage: string, fileName: string, base64_code?: string | undefined) {
+  constructor(key: string, fromPackage: string, fileName: string, inDB?: boolean) {
     this.key = key
-    this.fromPackege = fromPackage
+    this.fromPackage = fromPackage
     this.fileName = fileName
-    this.base64_code = base64_code ?? ''
+    this.inDB = inDB !== void 0 ? inDB : false
+    // this.base64_code = base64_code ?? ''
     const lastNodeIndex = fileName.lastIndexOf('.')
     const suffix = lastNodeIndex >= 0 ?
       fileName.slice(lastNodeIndex + 1) : ""
-    if (suffix in fileSuffixMap)
-      this.base64_type = fileSuffixMap[suffix as FileSuffix]
+    if (suffix in GetZip.fileSuffixMap)
+      this.base64_type = GetZip.fileSuffixMap[suffix as GetZip.FileSuffix]
     else throw new Error(`错误：未知的拓展名"${suffix}"。\n\t- 包key值: "${fromPackage}"\n\t- 文件名: "${fileName}"`)
   }
-}
-export interface FileInfo {
-  write: (code: string) => void,
-  getBase64: () => string,
-  getPath: () => string
-}
-FileInfo.prototype.write = function (code: string) {
-  if (this.base64_code) throw new Error(`错误：尝试覆盖已经写入的base64。\n\t- 文件key值: "${this.key}"`)
-  this.base64_code = code
-}
-FileInfo.prototype.getBase64 = function () {
-  return this.base64_code ?
-    `data:${this.base64_type};base64,${this.base64_code}` : ""
-}
-FileInfo.prototype.getPath = function () {
-  return `${this.fromPackege}/${this.fileName}`
+  setInDBTrue() {
+    // if (this.base64_code) throw new Error(`错误：尝试覆盖已经写入的base64。\n\t- 文件key值: "${this.key}"`)
+    // this.base64_code = code
+    this.inDB = true
+  }
+  getPath() {
+    return `${this.fromPackage}/${this.fileName}`
+  }
 }
 /******************************* FileInfo END ********************************/
 
@@ -186,8 +225,9 @@ export class CharaInfo {
   key: string
   name: string
   pic: Record<string, string>
-  static getCharaPicBase64(key: string, style: string) {
-    return FileInfo.getBase64(charaRecord[key].pic[style])
+  static getPicFilekey(key: string, style: string) {
+    if (charaRecord[key] === void 0) throw new Error(`CharaInfo.getPicFilekey(): 不存在的人物记录: ${key}`)
+    return charaRecord[key].pic[style]
   }
   constructor(key: string, name: string, pic: Record<string, string>) {
     this.key = key
@@ -212,7 +252,7 @@ export class TipsGroup {
   key: string
   name: string
   list: Tips[]
-  constructor(key: string, name: string, titleTextList: FixedArray<string,2>[]) {
+  constructor(key: string, name: string, titleTextList: FixedArray<string, 2>[]) {
     this.key = key
     this.name = name
     this.list = titleTextList.map(([title, text]) => new Tips(title, text))
@@ -220,3 +260,4 @@ export class TipsGroup {
 }
 /******************************* TipsGroup END ********************************/
 
+// PackageInfo.createPackageInfo('pk1','/package/home_SAMPLE.zip',{'_H_BG_0':'bg_0.png','_H_BG_1':'bg_1.png','_H_LOGO':'霂LOGO.png','_H_TITLE':'_h_title.png'}).load({})

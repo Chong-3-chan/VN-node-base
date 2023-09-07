@@ -3,13 +3,13 @@ import { VM } from "../class/Book"
 import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from "../class/Records"
 
 // key-value(includes key)
-export class KKVRecord<T extends { key: string }> implements Record<string, T>{
-    [key: string]: T
-    static push<T extends { key: string }>(record: KKVRecord<T>, tList: T[]) {
+export class KKVRecord<T extends { key: string | number }> implements Record<string | number, T>{
+    [key: string | number]: T
+    static push<T extends { key: string | number }>(record: KKVRecord<T>, tList: T[]) {
         for (const obj of tList as T[])
             record[obj.key] = obj
     };
-    constructor(tList?: Array<T> | undefined) {
+    constructor(tList?: Array<T>) {
         if (tList !== void 0)
             KKVRecord.push(this, tList)
     }
