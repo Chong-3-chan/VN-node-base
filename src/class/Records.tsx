@@ -113,7 +113,7 @@ export class PackageInfo implements PackageInfoLike {
         url: this.resourcePath.toString(),
         fileNameSet: new Set(Object.values(this.fileKeyNameMap))
       }, (msg) => {
-        const onStep: Record<GetZip.Worker_getZipState, null | (() => void)> = {
+        const onStepCase: Record<GetZip.Worker_getZipState, null | (() => void)> = {
           ready: null,
           downloading: null,
           loading: null,
@@ -129,7 +129,7 @@ export class PackageInfo implements PackageInfoLike {
           }
         } as const
         this.state = msg.state
-        const todo = onStep[this.state]
+        const todo = onStepCase[this.state]
         typeof todo === 'function' && (todo())
         const callback = onStepCallback?.[this.state]
         typeof callback === 'function' && callback(msg)

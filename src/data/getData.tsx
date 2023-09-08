@@ -3,6 +3,7 @@ import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from "../class/Records"
 import { dataURL, resourceBasePath } from "../config"
 import { dbh } from "../handle/IndexedDB"
 import * as Data from "./data"
+import { Checker } from "./globalSave"
 async function getDataObject() {
     // const obj = fetch(dataURL).then(e=>e.json())
     const obj = await fetch(new URL('./sample/sample.data.json', import.meta.url)).then(e => e.json())
@@ -67,7 +68,8 @@ export async function getData() {
             return code
         }))
     })
-
+    // const ck = new Checker(['&', ['|', [], ['2', '1', '3', '4']], ['&', [], []]])
+    // alert(ck.check())
     // const randomKV = Array(100000).fill(null).map(() => [Math.random().toString(36).slice(2), Math.random()] as [string, number])
     // console.warn(time(() => {
     //     const map: any = {}

@@ -1,8 +1,8 @@
 import { KKVRecord } from "../data/data"
+import * as GlobalSave from "../data/globalSave";
 import { dbh } from "../handle/IndexedDB"
 
 export type FixedArray<T, N extends number> = [T, ...T[]] & { length: N }
-
 
 // function vmtoobj(wm: string) {
 //     let obj: any = {};
@@ -67,47 +67,6 @@ export type FixedArray<T, N extends number> = [T, ...T[]] & { length: N }
 //     console.log('vmtoobj', obj);
 //     return obj;
 // }
-
-export namespace GlobalSave {
-    type StoryCheckerMode = '&' | '|' | '!'
-    type CheckerType = 'key' | '&' | '|' | '!'
-    export class Checker {
-        type: CheckerType
-        read?: { mode: StoryCheckerMode, some: readonly string[] | null, all: readonly string[] | null }
-        ended?: { mode: StoryCheckerMode, some: readonly string[] | null, all: readonly string[] | null }
-        checkKeyName?: string
-        constructor(keyName: string)
-        constructor(readAndEndedConfig: [StoryCheckerMode, ...FixedArray<[] | [StoryCheckerMode, readonly string[], readonly string[]], 2>])
-        constructor(args_0: string | [StoryCheckerMode, ...FixedArray<[] | [StoryCheckerMode, readonly string[], readonly string[]], 2>]) {
-            if (typeof args_0 === 'string') {
-                const [keyName] = [args_0]
-                this.type = 'key'
-                this.checkKeyName = keyName
-            }
-            else if (Array.isArray(args_0) && args_0.length === 3) {
-                const [readAndEndedConfig] = [args_0]
-                const [type, readConfig, endedConfig] = readAndEndedConfig
-                this.type = type
-                this.read = readConfig.length === 0 ?
-                    Object.freeze({ mode: '!', some: null, all: null }) :
-                    Object.freeze({
-                        mode: readConfig[0] as StoryCheckerMode,
-                        some: Object.freeze(readConfig[1]),
-                        all: Object.freeze(readConfig[2])
-                    })
-                this.ended = endedConfig.length === 0 ?
-                    Object.freeze({ mode: '!', some: null, all: null }) :
-                    Object.freeze({
-                        mode: endedConfig[0] as StoryCheckerMode,
-                        some: Object.freeze(endedConfig[1]),
-                        all: Object.freeze(endedConfig[2])
-                    })
-            }
-            else throw new Error(`Checker构造:参数类型有误。实际为:\n${JSON.stringify(args_0)}`)
-            Object.freeze(this)
-        }
-    }
-}
 
 export namespace VM {
     function equationLineToKV(equationLine: string) {
@@ -282,7 +241,7 @@ export namespace VM {
         defaultStyle: string
         end: FixedArray<string, 2>
         cover: string // homeResource's filekey
-        check: GlobalSave.Checker
+        check: GlobalSave.CheckerConstructorProps
         Story_KeyIDEnum?: KeyIDEnum
         constructor(ID: number, key: string, [BookVM, StoryVMMap]: [string, { [StoryKey: string]: string }]) {
             this.ID = ID
@@ -294,7 +253,7 @@ export namespace VM {
             this.defaultStyle = defaultStyle
             this.end = end
             this.cover = cover
-            this.check = new GlobalSave.Checker(check)
+            this.check = check
 
             this.Story_KeyIDEnum = {}
 
