@@ -72,7 +72,10 @@
     "extends": [
       "react-app",
       "react-app/jest"
-    ]
+    ],
+    "rules": {
+      "complexity":["warn",10]
+    }
   },
   "browserslist": {
     "production": [
