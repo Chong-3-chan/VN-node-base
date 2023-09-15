@@ -9,13 +9,14 @@ export const imurl = import.meta.url
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );
-root.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
-);
 
-getData();
+getData().then(() => {
+  root.render(
+    // <React.StrictMode>
+    <App />
+    // </React.StrictMode>
+  );
+});
 // PackageInfo.createPackageInfo('pk1','/package/home_SAMPLE.zip',{'_H_BG_0':'bg_0.png','_H_BG_1':'bg_1.png','_H_LOGO':'霂LOGO.png','_H_TITLE':'_h_title.png'}).load({})
 
 

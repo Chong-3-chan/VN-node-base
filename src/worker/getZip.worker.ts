@@ -11,14 +11,14 @@ async function d(props: GetZip.Worker_getZipProps) {
      postMessage({ state: 'ready', text: '加载准备中...' });
      try {
           const a = await (new JSZip.external.Promise(function (resolve, reject) {
-               postMessage({ state: 'downloading', resourcePath: url, percent: 0, text: '资源包下载中...' })
+               postMessage({ state: 'downloading', resourcePath: url, downloaded: 0, downloadTotal: null, text: '资源包下载中...' })
                JSZipUtils.getBinaryContent(url, {
                     callback: function (err: any, data: unknown) {
                          if (err) reject(err);
                          else resolve(data);
                     },
-                    progress: (e: { percent: number; }) =>
-                         postMessage({ state: "downloading", resourcePath: url, percent: e.percent, text: `资源包下载中... ${e.percent.toFixed(1)}%` })
+                    progress: (e: { loaded: number, total: number }) =>
+                         postMessage({ state: "downloading", resourcePath: url, downloaded: e.loaded, downloadTotal: e.total, text: `资源包下载中... ${(e.loaded / e.total * 100).toFixed(1)}%` })
                });
           }) as Promise<any>).catch((error) => { throw error })
 
@@ -42,11 +42,11 @@ async function d(props: GetZip.Worker_getZipProps) {
                          })
                })
           );
-          const failedFileNameList =(Array.from(fileNameSet).filter(name => !res[name]))
-          postMessage({ state: "done", data: res, failedFileNameList, loaded, total ,text: `资源包加载完成！`});
+          const failedFileNameList = (Array.from(fileNameSet).filter(name => !res[name]))
+          postMessage({ state: "done", data: res, failedFileNameList, loaded, total, text: `资源包加载完成！` });
           self.close()
      } catch (error) {
-          postMessage({ state: 'error', error , text: `资源加载出错！`})
+          postMessage({ state: 'error', error, text: `资源加载出错！` })
           self.close()
      }
 }

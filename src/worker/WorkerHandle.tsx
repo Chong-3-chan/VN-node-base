@@ -1,7 +1,7 @@
 import * as GetZip from "./getZip.export"
 type WorkerState = 'ready' | 'working' | 'done' | 'error'
 export interface WorkerMessage {
-    state: WorkerState | GetZip.Worker_getZipState
+    state: any
     text: string
     [key: string]: any
 }
@@ -52,6 +52,6 @@ export const workerRecord: Record<WorkerNames, WorkerInfo> = {
 type Worker_getZipOnmessage = (msg: GetZip.Worker_getZipMessage) => void | any
 export class Worker_getZip extends WorkerHandle {
     constructor(props: GetZip.Worker_getZipProps, onmessage: Worker_getZipOnmessage) {
-        super('getZip', props, onmessage as WorkerOnmessage)
+        super('getZip', props, onmessage)
     }
 }

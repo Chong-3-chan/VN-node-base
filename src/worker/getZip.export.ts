@@ -1,14 +1,15 @@
 export type Worker_getZipState = 'ready' | 'downloading' | 'loading' | 'done' | 'error'
 export interface Worker_getZipMessage {
-     state: Worker_getZipState
-     text: string
-     resourcePath?: string,
-     percent?: number,
-     error?: any,
-     loaded?: number,
-     total?: number | null,
-     data?: Worker_getZipResponse,
-     failedFileNameList?: string[]
+  state: Worker_getZipState
+  text: string
+  resourcePath?: string,
+  downloaded?: number,
+  downloadTotal?: number | null,
+  error?: any,
+  loaded?: number,
+  total?: number | null,
+  data?: Worker_getZipResponse,
+  failedFileNameList?: string[]
 }
 export type Worker_getZipProps = { url: string, fileNameSet: Set<string> }
 export type Worker_getZipResponse = { [fileName: string]: string }
