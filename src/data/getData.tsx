@@ -1,9 +1,9 @@
-import { FixedArray, VM } from "../class/Book"
+import { VM } from "../class/Book"
 import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from "../class/Records"
 import { dataURL, resourceBasePath } from "../config"
 import { dbh } from "../handle/IndexedDB"
 import * as Data from "./data"
-import { Checker } from "./globalSave"
+import type { FixedArray } from "../type";
 async function getDataObject() {
     // const obj = fetch(dataURL).then(e=>e.json())
     const obj = await fetch(new URL('./sample/sample.data.json', import.meta.url)).then(e => e.json())
@@ -54,12 +54,12 @@ export async function getData() {
 
     { // tipsGroup
         const tipsGroupCache: TipsGroup[] = []
-        Object.entries(tipsGroup).map(([key, [name,...group]]: any) => tipsGroupCache.push(new TipsGroup(key,name,group)))
+        Object.entries(tipsGroup).map(([key, [name, ...group]]: any) => tipsGroupCache.push(new TipsGroup(key, name, group)))
         Data.KKVRecord.push(Data.tipsGroupRecord, tipsGroupCache)
     }
 
-    Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async () => {
-        console.log(dataobj, Data)
+    Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async (e) => {
+        console.warn(dataobj, Data, e,'any')
         const fileKeys = Object.keys(Data.fileRecord)
         const randomKeys = Array(10).fill(null).map((e, i) => fileKeys[i])
         console.warn(await timeAsync(async () => {

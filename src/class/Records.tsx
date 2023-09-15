@@ -3,7 +3,7 @@ import { fileRecord, packageRecord, charaRecord, KKVRecord } from "../data/data"
 import { dbh } from "../handle/IndexedDB";
 import { WorkerHandle, WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
 import * as GetZip from "../worker/getZip.export"
-import { FixedArray } from "./Book";
+import type { FixedArray } from "../type";
 
 
 export type FileType = 'application' | 'image' | 'audio' | 'unknow'
@@ -67,90 +67,107 @@ export class PackageInfo implements PackageInfoLike {
     }
     else throw new Error(`构造PackageInfo时传入错误的参数:\n${JSON.stringify(Array.from(arguments), null, 2)}`)
   }
-  async load(onStepCallback?: { [step in GetZip.Worker_getZipState]?: (msg: WorkerMessage) => void }) {
-    const fileNameKeysMap = (() => {
-      const re: { [fileName: string]: string | string[] } = {}
-      Object.entries(this.fileKeyNameMap).forEach(([key, name]) => {
-        if (re[name] === void 0) re[name] = key
-        else Array.isArray(re[name]) ? (re[name] as string[]).push(key) : (re[name] = [re[name] as string, key])
-      })
-      return re
-    })()
-    function setInDBTrueM(fileNameList: string[]) {
-      fileNameList.forEach((fileName) => {
-        const fileKey_s = fileNameKeysMap[fileName]
-        Array.isArray(fileKey_s) ? (fileKey_s as string[]).forEach(fileKey => fileRecord[fileKey].setInDBTrue()) : fileRecord[fileKey_s].setInDBTrue();
+  private loadPromiseOnStepCallbacks?: Partial<Record<GetZip.Worker_getZipState, ((msg: GetZip.Worker_getZipMessage) => void)[]>>
+  private loadPromise?: Promise<any>
+  load(onStepCallback?: Partial<Record<GetZip.Worker_getZipState, ((msg: GetZip.Worker_getZipMessage) => void)>>): Promise<[string, string[]] | any> {
+    // if (this.loadPromise) debugger
+    if (onStepCallback !== undefined) {
+      Object.entries(onStepCallback).forEach(([state, fn]) => {
+        ((this.loadPromiseOnStepCallbacks ??= {})[state as GetZip.Worker_getZipState] ??= []).push(fn)
       })
     }
-
-    // todo:hit helper
-    type DBfile = { path: string, fileName: string, packageKey: string, code: string }
-    const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key)
-
-    if (fromDBfiles) {
-      // todo:文件校验（md5）
-      this.worker = void 0
-      const needFileNameSet = new Set(Object.values(this.fileKeyNameMap))
-      const fileNameList: string[] = []
-      for (const { fileName } of fromDBfiles) {
-        if (needFileNameSet.has(fileName)) {
-          needFileNameSet.delete(fileName)
-          fileNameList.push(fileName)
-        }
-        else break
+    if (this.loadPromise) return this.loadPromise
+    return this.loadPromise = new Promise(async (resolve, reject) => {
+      const fileNameKeysMap = (() => {
+        const re: { [fileName: string]: string | string[] } = {}
+        Object.entries(this.fileKeyNameMap).forEach(([key, name]) => {
+          if (re[name] === void 0) re[name] = key
+          else Array.isArray(re[name]) ? (re[name] as string[]).push(key) : (re[name] = [re[name] as string, key])
+        })
+        return re
+      })()
+      function setInDBTrueM(fileNameList: string[]) {
+        fileNameList.forEach((fileName) => {
+          const fileKey_s = fileNameKeysMap[fileName]
+          Array.isArray(fileKey_s) ? (fileKey_s as string[]).forEach(fileKey => fileRecord[fileKey].setInDBTrue()) : fileRecord[fileKey_s].setInDBTrue();
+        })
       }
-      if (needFileNameSet.size === 0) {
-        this.state = 'done'
-        setInDBTrueM(fileNameList)
-        console.warn('DBhit', this.key)
-        return
-      }
-    }
-
-
-    const data: GetZip.Worker_getZipResponse = await new Promise((resolve, reject) => {
-      this.worker = new Worker_getZip({
-        url: this.resourcePath.toString(),
-        fileNameSet: new Set(Object.values(this.fileKeyNameMap))
-      }, (msg) => {
-        const onStepCase: Record<GetZip.Worker_getZipState, null | (() => void)> = {
-          ready: null,
-          downloading: null,
-          loading: null,
-          done: () => {
-            this.failedFileNameList = msg.failedFileNameList as string[]
-            if (this.failedFileNameList.length !== 0)
-              console.warn(`资源包 ${this.key} 下存在获取失败的文件: \n${JSON.stringify(this.failedFileNameList, null, 2)}\n将会导致以下文件无法正常获取: \n[\n${(this.failedFileNameList.map(fileName => `\t${JSON.stringify(fileNameKeysMap[fileName])} // ${fileName}\n`))}]`)
-            resolve(msg.data);
-          },
-          error: () => {
-            this.error = msg.error
-            reject(msg.error);
+      // TODO:hit helper// hit DB
+      type DBfile = { path: string, fileName: string, packageKey: string, code: string }
+      const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key)
+      if (fromDBfiles) {
+        // TODO:文件校验（md5）
+        this.worker = void 0
+        const needFileNameSet = new Set(Object.values(this.fileKeyNameMap))
+        const fileNameList: string[] = []
+        for (const { fileName } of fromDBfiles) {
+          if (needFileNameSet.has(fileName)) {
+            needFileNameSet.delete(fileName)
+            fileNameList.push(fileName)
           }
-        } as const
-        this.state = msg.state
-        const todo = onStepCase[this.state]
-        typeof todo === 'function' && (todo())
-        const callback = onStepCallback?.[this.state]
-        typeof callback === 'function' && callback(msg)
-        // console.log(this, msg.text)
-      })
-    }).then((data: any) => {
-      this.worker = void 0
-      const writeDBfilesCache: DBfile[] = []
-      const failedFileNameSet = new Set(this.failedFileNameList)
-      Object.entries(data).forEach(([name, code]) => {
-        if (!failedFileNameSet.has(name)) {
-          writeDBfilesCache.push({ path: `${this.key}/${name}`, fileName: name, packageKey: this.key, code: code as string })
+          else break
         }
+        if (needFileNameSet.size === 0) {
+          this.state = 'done'
+          // this.loadPromiseOnStepCallbacks?.['done']?.forEach(fn => fn({}))
+          setInDBTrueM(fileNameList)
+          console.warn('DBhit', this.key)
+          resolve([this.key, fileNameList])
+          return
+        }
+      }
+
+      const data: string[] = await new Promise((resolve, reject) => {
+        this.worker = new Worker_getZip({
+          url: this.resourcePath.toString(),
+          fileNameSet: new Set(Object.values(this.fileKeyNameMap))
+        }, (msg) => {
+          const onStepCase: Record<GetZip.Worker_getZipState, null | (() => void)> = {
+            ready: null,
+            downloading: null,
+            loading: null,
+            done: () => {
+              this.failedFileNameList = msg.failedFileNameList as string[]
+              if (this.failedFileNameList.length !== 0)
+                console.warn(`资源包 ${this.key} 下存在获取失败的文件: \n${JSON.stringify(this.failedFileNameList, null, 2)}\n将会导致以下文件无法正常获取: \n[\n${(this.failedFileNameList.map(fileName => `\t${JSON.stringify(fileNameKeysMap[fileName])} // ${fileName}\n`))}]`)
+              resolve(msg.data);
+            },
+            error: () => {
+              this.error = msg.error
+              reject(msg.error);
+            }
+          } as const
+          this.state = msg.state
+          const todo = onStepCase[this.state]
+          typeof todo === 'function' && (todo())
+          const callbacks = this.loadPromiseOnStepCallbacks?.[this.state]
+          callbacks?.forEach(callback => typeof callback === 'function' && callback(msg))
+          console.log(this, msg, msg.text)
+        })
+      }).then((data: any) => {
+        this.worker = void 0
+        const writeDBfilesCache: DBfile[] = []
+        const wroteFileNameList: string[] = []
+        const failedFileNameSet = new Set(this.failedFileNameList)
+        Object.entries(data).forEach(([name, code]) => {
+          if (!failedFileNameSet.has(name)) {
+            writeDBfilesCache.push({ path: `${this.key}/${name}`, fileName: name, packageKey: this.key, code: code as string })
+            wroteFileNameList.push(name)
+          }
+        })
+        setInDBTrueM(Object.keys(data))
+        return dbh.putM('Files', writeDBfilesCache).then(() => wroteFileNameList)
+      }).catch((error) => {
+        throw new Error(error)
       })
-      setInDBTrueM(Object.keys(data))
-      return dbh.putM('Files', writeDBfilesCache)
-    }).catch((error) => {
-      throw new Error(error)
-    }) as GetZip.Worker_getZipResponse;
-    Object.freeze(this)
-    return [this.key, data]
+      resolve([this.key, data])
+    }).then((e) => {
+      // if (!Object.isFrozen(this)) {
+      this.loadPromise = void 0
+      //   Object.freeze(this)
+      // }
+      return e
+    })
   }
 }
 // export namespace PackageInfo {
