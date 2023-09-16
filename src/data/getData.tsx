@@ -58,16 +58,16 @@ export async function getData() {
         Data.KKVRecord.push(Data.tipsGroupRecord, tipsGroupCache)
     }
 
-    Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async (e) => {
-        console.warn(dataobj, Data, e,'any')
-        const fileKeys = Object.keys(Data.fileRecord)
-        const randomKeys = Array(10).fill(null).map((e, i) => fileKeys[i])
-        console.warn(await timeAsync(async () => {
-            const code = await FileInfo.getFilesBase64([...randomKeys])
-            console.log(code, CharaInfo.getPicFilekey('12', '01'))
-            return code
-        }))
-    })
+    // Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async (e) => {
+    //     console.warn(dataobj, Data, e,'any')
+    //     const fileKeys = Object.keys(Data.fileRecord)
+    //     const randomKeys = Array(10).fill(null).map((e, i) => fileKeys[i])
+    //     console.warn(await timeAsync(async () => {
+    //         const code = await FileInfo.getFilesBase64([...randomKeys])
+    //         console.log(code, CharaInfo.getPicFilekey('12', '01'))
+    //         return code
+    //     }))
+    // })
     // const ck = new Checker(['&', ['|', [], ['2', '1', '3', '4']], ['&', [], []]])
     // alert(ck.check())
     // const randomKV = Array(100000).fill(null).map(() => [Math.random().toString(36).slice(2), Math.random()] as [string, number])
