@@ -1,4 +1,4 @@
-import { useState, type FC, useEffect, useCallback, useRef } from 'react'
+import { useState, type FC, useEffect, useCallback, useRef, useMemo } from 'react'
 import './LoadingP.less'
 import { fileRecord, homeResource, packageRecord } from '../data/data'
 
@@ -93,18 +93,20 @@ function useLoadingResult(loadList: string[]): LoadingResult {
     const loadListRef = useRef(loadList)
     const [phase, setPhase] = useState(defaultPhase)
     const [progress, setProgress]: [LoadingProgress, React.Dispatch<React.SetStateAction<LoadingProgress>>] = useState(defaultLoadingProgess)
+    const nextDelay = useRef(LoadingPConfig[defaultPhase].delay)
     const [delayOver, setDelayOver] = useState(!LoadingPConfig[defaultPhase].delay)
+    const nextWait = useRef(LoadingPConfig[defaultPhase].wait)
     const [waitOver, setWaitOver] = useState(!LoadingPConfig[defaultPhase].wait)
     useEffect(() => {
-        const newDelay = LoadingPConfig[phase].delay
-        if (newDelay !== void 0) {
+        nextDelay.current = LoadingPConfig[phase].delay
+        if (nextDelay.current !== void 0) {
             setDelayOver(false)
-            setTimeout(() => setDelayOver(true), newDelay)
+            setTimeout(() => setDelayOver(true), nextDelay.current)
         }
-        const newWait = LoadingPConfig[phase].wait
-        if (newWait !== void 0) {
+        nextWait.current = LoadingPConfig[phase].wait
+        if (nextWait.current !== void 0) {
             setWaitOver(false)
-            Promise.all(newWait.map(fn => fn({ loadList: loadListRef.current, setProgress }))).then(() => setWaitOver(true))
+            Promise.all(nextWait.current.map(fn => fn({ loadList: loadListRef.current, setProgress }))).then(() => setWaitOver(true))
         }
     }, [phase])
     useEffect(() => {
@@ -127,20 +129,5 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList }: LoadingPPr
     const { phase, progress } = useLoadingResult(loadList)
     return <h1>{LoadingPPhase[phase]} - {progress.loadedList.length}/{progress.needList.length} {progress.currentLoadedPercentage}</h1>
 }
-// class HooksPromise {
-//     _resolve!: (e: any) => void
-//     _reject!: (e: any) => void
-//     promise: Promise<any>
-//     constructor() {
-//         let _resolve, _reject
-//         this.promise = new Promise((resolve, reject) => {
-//             _resolve = (e: any) => resolve(e);
-//             _reject = (e: any) => reject(e)
-//         })
-//         this._resolve = _resolve as any
-//         this._reject = _reject as any
-//     }
-// }
-// const hp = new HooksPromise();
-// (window as any).hp = hp
+
 export default LoadingP
