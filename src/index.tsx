@@ -6,6 +6,8 @@ import reportWebVitals from './reportWebVitals';
 import { getData } from './data/getData';
 export const imurl = import.meta.url
 
+// console.warn("禁用log")
+// console.log = function(){}
 const root = ReactDOM.createRoot(
   document.getElementById('root') as HTMLElement
 );

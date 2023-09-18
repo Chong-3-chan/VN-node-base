@@ -92,7 +92,8 @@ export class PackageInfo implements PackageInfoLike {
           Array.isArray(fileKey_s) ? (fileKey_s as string[]).forEach(fileKey => fileRecord[fileKey].setInDBTrue()) : fileRecord[fileKey_s].setInDBTrue();
         })
       }
-      // TODO:hit helper// hit DB
+      // TODO:hit helper
+      // hit DB
       type DBfile = { path: string, fileName: string, packageKey: string, code: string }
       const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key)
       if (fromDBfiles) {
