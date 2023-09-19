@@ -130,7 +130,9 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList }: LoadingPPr
         const todo = onStepCaseRef.current?.[phase]
         todo !== undefined && todo()
     }, [phase])
-    return <h1>{LoadingPhase[loadingPhase]},{LoadingPPhase[phase]} - {progress.loadedList.length}/{progress.needList.length} {progress.currentLoadedPercentage}</h1>
+    return <div id='LoadingP' style={{opacity:progress.currentLoadedPercentage*0.01}}>
+        <h1>{LoadingPhase[loadingPhase]},{LoadingPPhase[phase]} - {progress.loadedList.length}/{progress.needList.length} {progress.currentLoadedPercentage}</h1>
+    </div>
 }
 
 export default LoadingP
