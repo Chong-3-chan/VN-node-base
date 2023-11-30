@@ -3,10 +3,9 @@ import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from "../class/Records"
 import { dataURL, resourceBasePath } from "../config"
 import { dbh } from "../handle/IndexedDB"
 import * as Data from "./data"
-import type { FixedArray } from "../type";
 async function getDataObject() {
-    // const obj = fetch(dataURL).then(e=>e.json())
-    const obj = await fetch(new URL('./sample/sample.data.json', import.meta.url)).then(e => e.json())
+    const obj = fetch(dataURL).then(e=>e.json())
+    // const obj = await fetch(new URL('./sample/sample.data.json', import.meta.url)).then(e => e.json())
     return obj
 }
 async function timeAsync(fun: () => Promise<any>): Promise<number> {
@@ -23,11 +22,6 @@ export async function getData() {
     const dataobj = await getDataObject()
     const { book, file, packagePath, chara, tipsGroup } = dataobj
     console.log(dataobj)
-    { // book
-        const bookCache: VM.StaticBook[] = []
-        Object.entries(book).map(([BookKey, BookVMe]: any, i) => bookCache.push(new VM.StaticBook(i, BookKey, BookVMe)))
-        dbh.putM('Book', bookCache) // Book并入data？
-    }
 
     { // file+packagePath
         const packageInfoCache: PackageInfo[] = []
@@ -36,7 +30,7 @@ export async function getData() {
             Object.keys(packagePath).forEach(packageKey => re[packageKey] = {})
             return re
         })()
-        Object.entries(file as Record<string, FixedArray<string, 2>>).forEach(([key, [fromPackage, fileName]]) => {
+        Object.entries(file as Record<string, [string,string]>).forEach(([key, [fromPackage, fileName]]) => {
             if (keyNameMapCache[fromPackage] === void 0) throw new Error(`getData(): file表中存在无packagePath记录的fromPackage值。\n\t异常的packageKey为:${fromPackage}`)
             keyNameMapCache[fromPackage][key] = fileName
         })
@@ -57,6 +51,14 @@ export async function getData() {
         Object.entries(tipsGroup).map(([key, [name, ...group]]: any) => tipsGroupCache.push(new TipsGroup(key, name, group)))
         Data.KKVRecord.push(Data.tipsGroupRecord, tipsGroupCache)
     }
+    
+    { // book必须最后编: fileKeys依赖
+        const bookCache: VM.StaticBook[] = []
+        Object.entries(book).map(([BookKey, BookVMe]: any, i) => bookCache.push(new VM.StaticBook(i, BookKey, BookVMe)))
+        dbh.putM('Book', bookCache) // Book并入data？
+    }
+
+    console.log(Data)
 
     // Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async (e) => {
     //     console.warn(dataobj, Data, e,'any')

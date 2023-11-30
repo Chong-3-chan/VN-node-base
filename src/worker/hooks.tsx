@@ -15,7 +15,7 @@ export function useDTJ<T extends number | string>(...args: readonly [[defaultPha
       Object.entries<boolean[]>(condition).map(([phaseName, phaseConditions]) => {
         return [phaseName, phaseConditions.map((e, i) => {
           return ((value?: boolean) => {
-            if (value === undefined) return phaseConditions[i]
+            if (value === void 0) return phaseConditions[i]
             phaseConditions[i] = value
             setCondition({ ...condition })
             return phaseConditions[i]

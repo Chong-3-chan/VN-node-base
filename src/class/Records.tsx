@@ -3,7 +3,6 @@ import { fileRecord, packageRecord, charaRecord, KKVRecord } from "../data/data"
 import { dbh } from "../handle/IndexedDB";
 import { WorkerHandle, WorkerMessage, Worker_getZip } from "../worker/WorkerHandle";
 import * as GetZip from "../worker/getZip.export"
-import type { FixedArray } from "../type";
 
 
 export type FileType = 'application' | 'image' | 'audio' | 'unknow'
@@ -71,7 +70,7 @@ export class PackageInfo implements PackageInfoLike {
   private loadPromise?: Promise<any>
   load(onStepCallback?: Partial<Record<GetZip.Worker_getZipState, ((msg: GetZip.Worker_getZipMessage) => void)>>): Promise<[string, string[]] | any> {
     // if (this.loadPromise) debugger
-    if (onStepCallback !== undefined) {
+    if (onStepCallback !== void 0) {
       Object.entries(onStepCallback).forEach(([state, fn]) => {
         ((this.loadPromiseOnStepCallbacks ??= {})[state as GetZip.Worker_getZipState] ??= []).push(fn)
       })
@@ -97,7 +96,7 @@ export class PackageInfo implements PackageInfoLike {
       type DBfile = { path: string, fileName: string, packageKey: string, code: string }
       const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key)
       if (fromDBfiles) {
-        // TODO:文件校验（md5）
+        // TODO: 文件校验（md5）
         this.worker = void 0
         const needFileNameSet = new Set(Object.values(this.fileKeyNameMap))
         const fileNameList: string[] = []
@@ -110,7 +109,10 @@ export class PackageInfo implements PackageInfoLike {
         }
         if (needFileNameSet.size === 0) {
           this.state = 'done'
-          // this.loadPromiseOnStepCallbacks?.['done']?.forEach(fn => fn({}))
+          this.loadPromiseOnStepCallbacks?.['done']?.forEach(fn => fn({
+            state: 'done',
+            text: 'hit DB'
+          }))
           setInDBTrueM(fileNameList)
           console.warn('DBhit', this.key)
           resolve([this.key, fileNameList])
@@ -118,7 +120,7 @@ export class PackageInfo implements PackageInfoLike {
         }
       }
 
-      const data: string[] = await new Promise((resolve, reject) => {
+      const data: string[] | void = await new Promise((_resolve, _reject) => {
         this.worker = new Worker_getZip({
           url: this.resourcePath.toString(),
           fileNameSet: new Set(Object.values(this.fileKeyNameMap))
@@ -131,11 +133,11 @@ export class PackageInfo implements PackageInfoLike {
               this.failedFileNameList = msg.failedFileNameList as string[]
               if (this.failedFileNameList.length !== 0)
                 console.warn(`资源包 ${this.key} 下存在获取失败的文件: \n${JSON.stringify(this.failedFileNameList, null, 2)}\n将会导致以下文件无法正常获取: \n[\n${(this.failedFileNameList.map(fileName => `\t${JSON.stringify(fileNameKeysMap[fileName])} // ${fileName}\n`))}]`)
-              resolve(msg.data);
+              _resolve(msg.data);
             },
             error: () => {
               this.error = msg.error
-              reject(msg.error);
+              _reject(msg.error);
             }
           } as const
           this.state = msg.state
@@ -158,10 +160,8 @@ export class PackageInfo implements PackageInfoLike {
         })
         setInDBTrueM(Object.keys(data))
         return dbh.putM('Files', writeDBfilesCache).then(() => wroteFileNameList)
-      }).catch((error) => {
-        throw new Error(error)
-      })
-      resolve([this.key, data])
+      }).catch(reject)
+      if (data) resolve([this.key, data])
     }).then((e) => {
       // if (!Object.isFrozen(this)) {
       this.loadPromise = void 0
@@ -270,7 +270,7 @@ export class TipsGroup {
   key: string
   name: string
   list: Tips[]
-  constructor(key: string, name: string, titleTextList: FixedArray<string, 2>[]) {
+  constructor(key: string, name: string, titleTextList: [string,string][]) {
     this.key = key
     this.name = name
     this.list = titleTextList.map(([title, text]) => new Tips(title, text))

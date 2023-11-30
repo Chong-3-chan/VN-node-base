@@ -5,7 +5,7 @@ interface InfoData {
     options: {} | null,
     autoSave: {} | null,
     checkKeyMap: Record<string, boolean> | null
-}// TODO:完善属性type
+}// TODO: 完善属性type
 interface InfoData_wrote extends InfoData {
     readStory: string[],
     endedStory: string[],
