@@ -157,7 +157,7 @@ class DBHandle extends DBHandle_base implements Record<keyof typeof storeControl
         reject(e);
       };
       request.onsuccess = (e: any) => {
-        console.log([fnName, base], props, '数据操作成功');
+        // console.log([fnName, base], props, '数据操作成功');
         resolve((request as IDBRequest<any>).result);
       };
     }
@@ -194,5 +194,5 @@ export const dbh: DBHandle = (function () {
     version = now;
   }
   localStorage.setItem('version', version.toString());
-  return new DBHandle('VM', storeRecord, version);
+  return new DBHandle('VN', storeRecord, version);
 })();

@@ -1,7 +1,11 @@
+export function classNames(...list: (string | void)[]) {
+  return list.filter((e) => e).join(' ');
+}
+
 function getDeepCloneMain() {
   const cache = new Map();
   const main = function (val: any) {
-    if (typeof val !== "object" || val === null) {
+    if (typeof val !== 'object' || val === null) {
       return val;
     }
     const fromCache = cache.get(val);

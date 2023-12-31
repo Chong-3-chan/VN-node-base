@@ -1,7 +1,7 @@
 export const resourceBasePathRecord: Record<ApplicationResource, string> = {
-    'SERVER': new URL('/vm-node/ex/', 'http://cdn.chong-chan.cn').toString(),
+    'SERVER': new URL('/vn-node/ex/', 'http://cdn.chong-chan.cn').toString(),
     // 'SAMPLE': new URL('/vn-node/sample/', 'http://cdn.chong-chan.cn').toString(),
-    'SAMPLE': new URL('/vm-node/sample/', 'http://chong-chan.miunachan.top').toString(),
+    'SAMPLE': new URL('/vn-node/sample/', 'http://chong-chan.miunachan.top').toString(),
     'EDITOR': new URL('helper://localhost:8081/').toString()
 } as const
 export type ApplicationResource = 'SAMPLE' | 'SERVER' | 'EDITOR'

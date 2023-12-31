@@ -1,3 +1,101 @@
 #MainP {
-    
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  .placeBox {
+    position: absolute;
+    top: 0;
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    &.hide {
+      opacity: 0;
+    }
+    &.in {
+      animation: in 0.5s ease-in-out both;
+    }
+    img {
+      background-color: black;
+      width: 100%;
+      height: 100%;
+    }
+    @keyframes in {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+  }
+
+  .charaBox {
+    position: absolute;
+    top: 0;
+    overflow: hidden;
+    width: 30%;
+    &.hide {
+      opacity: 0;
+    }
+    @keyframes in {
+      0% {
+        opacity: 0;
+      }
+      100% {
+        opacity: 1;
+      }
+    }
+    &.out {
+      animation: in 0.5s ease-in-out both reverse;
+    }
+    &.in {
+      animation: in 0.5s ease-in-out both;
+    }
+    @keyframes shake {
+      0% {
+        transform: translateX(0rem);
+      }
+      20% {
+        transform: translateX(-0.1rem);
+      }
+      40% {
+        transform: translateX(0.1rem);
+      }
+      60% {
+        transform: translateX(-0.1rem);
+      }
+      80% {
+        transform: translateX(0.1rem);
+      }
+      100% {
+        transform: translateX(0rem);
+      }
+    }
+    &.move-shake {
+      animation: shake 0.8s ease-in-out;
+    }
+    @keyframes nod {
+      0% {
+        transform: translateY(0rem);
+      }
+      40% {
+        transform: translateY(0.1rem);
+      }
+      100% {
+        transform: translateY(0rem);
+      }
+    }
+    &.move-nod {
+      animation: nod 0.5s ease-in-out;
+    }
+    img {
+      background-color: transparent;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+    }
+    img[src] {
+      opacity: unset;
+    }
+  }
 }

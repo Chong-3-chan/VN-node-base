@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, 
 import logo from './logo.svg';
 import Page, { Pages } from './pages';
 import './App.less';
-import { useDTJ } from './worker/hooks';
+import { useDTJ } from './handle/hooks';
 import { tipsGroupRecord } from './data/data';
 import { LoadingPProps } from './pages/LoadingP';
 import { ActivePageEnum, usePageState } from './pageState';
@@ -12,7 +12,9 @@ import { PageStateProvider } from './pageState';
 function Test() {
   const { pageState, pageAction } = usePageState();
   // const [count, setCount] = useState(0);
-  const handle = () => {
+  const handle = (e: number | undefined) => {
+    pageAction.setActivePage(ActivePageEnum.MainP, e);
+
     // setCount((e) => e + 1);
     // // pageAction.setActivePage(ActivePageEnum.MainP);
     // dbh.get('Sentence',888).then(console.log);
@@ -21,9 +23,10 @@ function Test() {
   };
   // if (countt !== count) countt = count;
   return (
-    <button style={{ position: 'fixed' }} onClick={handle}>
-      {'test'}
-    </button>
+    <div style={{ position: 'fixed', display: 'flex' }}>
+      <button onClick={() => handle(0x00000000)}>{'test'}</button>
+      <button onClick={() => handle(0x01000000)}>{'test2'}</button>
+    </div>
   );
 }
 

@@ -1,8 +1,8 @@
 import { useState, type FC, useEffect, useCallback, useRef, useMemo, useReducer } from 'react';
 import './LoadingP.less';
-import { fileRecord, homeResource, packageRecord } from '../data/data';
-import { useDTJ } from '../worker/hooks';
-import { TipsGroup } from '../class/Records';
+import { fileRecord, homeResource, packageRecord, tipsGroupRecord } from '../data/data';
+import { useDTJ } from '../handle/hooks';
+import { Tips, TipsGroup } from '../class/Records';
 import { usePageState } from '../pageState';
 
 enum LoadingPPhase {
@@ -71,7 +71,7 @@ function useLoadingResult(loadList: string[]): LoadingResult {
                 .filter((e) => e)
             )
           );
-          console.warn('need', needPackageKeys);
+          console.warn('need', loadListRef.current, needPackageKeys);
           const loadedList: string[] = [];
           const progress: LoadingProgress = {
             loadedList: loadedList,
@@ -141,25 +141,33 @@ function useLoadingResult(loadList: string[]): LoadingResult {
 }
 
 export interface LoadingPProps {
+  onLoaded?: () => Promise<any>;
   onStepCase?: Partial<Record<LoadingPPhase, (() => void)[]>>;
   loadList: string[];
-  tips: TipsGroup[];
+  tips: string[];
   title: string;
 }
-export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title }: LoadingPProps) => {
+export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title, onLoaded }: LoadingPProps) => {
   const { pageAction } = usePageState();
   const onStepCaseRef = useRef(onStepCase);
-  const tipsRef = useRef(
-    (() => {
-      const re = [...tips.map((e) => e.list).flat(1)];
+  const tipsRef = useRef<Tips[]>([]);
+  useEffect(() => {
+    tipsRef.current = (() => {
+      const re = [
+        ...tips
+          .map((e) => tipsGroupRecord[e] ?? void 0)
+          .filter((e) => e !== void 0)
+          .map((e) => e.list)
+          .flat(1),
+      ];
       for (let i = 0; i < re.length - 1; ++i) {
         let j = Math.floor((re.length - i) * Math.random()) + i;
         if (j === i) continue;
         [re[i], re[j]] = [re[j], re[i]];
       }
       return re;
-    })()
-  );
+    })();
+  }, []);
   const logoMaskRef = useRef<HTMLDivElement>(null);
   const [style, setStyle] = useState<LoadingPCSSProperties>({});
   const { phase: loadingPhase, progress, start } = useLoadingResult(loadList);
@@ -179,6 +187,17 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title 
     [LoadingPPhase.out, 1],
     [LoadingPPhase.done, 0]
   );
+  // console.log(
+  //   JSON.stringify({
+  //     [LoadingPPhase.init]: [delay_init()],
+  //     [LoadingPPhase.in]: [delay_in()],
+  //     [LoadingPPhase.loading]: [delay_loading(), loaded(), tipsViewTJ()],
+  //     [LoadingPPhase.out]: [delay_out()],
+  //     [LoadingPhase.done]: [],
+  //   }),
+  //   null,
+  //   2
+  // );
   const [tipsNoSwitchLock, setTipsNoSwitchLock] = useState(true);
   const [tipsNo, tipsNoAction] = useReducer(
     ([current, next]: number[], type: 'switch' | 'callback'): number[] => {
@@ -193,18 +212,19 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title 
     [0, 0]
   );
   useEffect(() => {
-    if (loadingPhase === LoadingPhase.done) loaded(true);
+    if (loadingPhase === LoadingPhase.done) {
+      if (onLoaded) onLoaded().then(() => loaded(true));
+      else loaded(true);
+    }
   }, [loadingPhase]);
-  console.warn(loadingPhase);
   useEffect(() => {
     const todoMap: Record<LoadingPPhase, (() => void) | null> = {
       [LoadingPPhase.init]: () => {
         setTimeout(() => {
           delay_init(true);
-        }, 1);
+        }, 50);
       },
       [LoadingPPhase.in]: () => {
-        start();
         tipsViewTJ(true);
         if (logoMaskRef.current) {
           const event = logoMaskRef.current;
@@ -224,6 +244,7 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title 
         }
       },
       [LoadingPPhase.loading]: () => {
+        start();
         setTimeout(() => delay_loading(true), 1000);
         // 最短加载页面停留时间
       },
@@ -261,12 +282,15 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title 
   useEffect(() => {
     // 外部传入的步骤回调
     const todos = onStepCaseRef.current?.[phase];
-    todos !== void 0 && todos.forEach(todo=>todo());
+    todos !== void 0 && todos.forEach((todo) => todo());
   }, [phase]);
   useEffect(() => {
     // 更新进度条啦
     const needCount = progress.needList.length;
-    if (!needCount) return;
+    if (!needCount) {
+      setStyle({ ...style, '--percentage': (100).toString() });
+      return;
+    }
     const loadedCount = progress.loadedList.length;
     const currentPercentage = progress.currentLoadedPercentage;
     setStyle({ ...style, '--percentage': Math.floor((loadedCount * 100 + currentPercentage) / needCount).toString() });
