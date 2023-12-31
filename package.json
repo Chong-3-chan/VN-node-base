@@ -2,7 +2,7 @@
   "name": "vn-node-base-0",
   "version": "0.1.0",
   "private": true,
-  "homepage": "/vm-node/build",
+  "homepage": "/vn-node/build",
   "dependencies": {
     "@babel/core": "^7.16.0",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.3",
@@ -76,7 +76,7 @@
     "rules": {
       "complexity": [
         "warn",
-        10
+        15
       ]
     }
   },
