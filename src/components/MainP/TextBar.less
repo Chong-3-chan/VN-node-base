@@ -1,0 +1,76 @@
+#MainP {
+  .text-bar {
+    text-shadow: #8888f599;
+    --header-height: var(--text-bar-header-height);
+    --body-height: var(--text-bar-body-height);
+    --chara-head-width: 2.5rem;
+    height: 3rem;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    background-color: rgba(32, 32, 32, 0.6);
+    -webkit-backdrop-filter: blur(0.03rem);
+    backdrop-filter: blur(0.03rem);
+    & > .header {
+      --fn-button-width: 0.45rem;
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      flex-wrap: nowrap;
+      height: var(--header-height);
+      width: calc(100% - var(--fn-button-width));
+      // outline: 0.02rem dashed #8888f599;
+      font-size: 0.28rem;
+      text-align: center;
+      overflow-y: visible;
+      overflow-x: hidden;
+      & > .chara-name {
+        position: relative;
+        font-size: 0.32rem;
+        width: 2rem;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: row;
+        justify-content: flex-start;
+        align-items: center;
+        margin-left: calc(var(--chara-head-width) + 0.2rem);
+        margin-top: 0.05rem;
+      }
+    }
+    & > .body {
+      display: flex;
+      & > .chara-head {
+        background-color: #8888f522;
+        height: var(--body-height);
+        width: var(--body-height);
+      }
+      & > .text {
+        position: relative;
+        font-size: 0.36rem;
+        height: var(--body-height);
+        width: calc(16rem - 2 * var(--body-height));
+        padding: 0.1rem 0.1rem 0 0.1rem;
+        // outline: 0.02rem dashed #8888f599;
+        box-sizing: border-box;
+        & > .flowing-text {
+          font-size: 0.36rem;
+          height: 100%;
+          // background-color: rgba(32, 32, 32, 0.6);
+          outline: 0.02rem dashed #8888f599;
+        }
+        &::before {
+          content: '';
+          height: 0.03rem;
+          border-radius: 0.015rem 0 0 0.15rem;
+          width: 4rem;
+          position: absolute;
+          top: -0.08rem;
+          background-color: #999;
+          mask-image: linear-gradient(to right, #00000033 0rem, #000000aa 0.4rem, #00000000 4rem);
+          transform: translateY(0.1rem);
+        }
+      }
+    }
+    position: absolute;
+  }
+}

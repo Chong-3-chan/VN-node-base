@@ -5,16 +5,18 @@ import { useRef, useState, useEffect, useMemo, useCallback } from 'react';
  * @returns [phase, flags' setter&getter Record, reset]
  */
 export function useDTJ<T extends number | string>(
-  ...args: readonly [[defaultPhaseName: T, conditionCount: number], ...[phaseName: T, conditionCount: number][]]
+  // ...args: readonly [[defaultPhaseName: T, conditionCount: number], ...[phaseName: T, conditionCount: number][]]
+  props: Record<T, number>
 ): [phase: T, re: Record<T, ((value?: boolean) => boolean)[]>, reset: () => void] {
-  const phaseConfig = useRef(args);
+  const phaseConfig = useMemo(() => Object.entries(props), []) as [T, number][];
+  // const phaseConfig = useRef(args);
   const [phaseOrder, setPhaseOrder] = useState(0);
   const [condition, setCondition] = useState(() =>
-    Object.fromEntries<boolean[]>(phaseConfig.current.map(([phaseName, conditionCount]) => [phaseName, Array(conditionCount).fill(false)]))
+    Object.fromEntries(phaseConfig.map(([phaseName, conditionCount]) => [phaseName, Array(conditionCount).fill(false)])) as Record<T, boolean[]>
   );
   useEffect(() => {
     let nextOrder = phaseOrder;
-    while (nextOrder + 1 < phaseConfig.current.length && condition[phaseConfig.current[nextOrder][0]].every((e) => e)) ++nextOrder;
+    while (nextOrder + 1 < phaseConfig.length && condition[phaseConfig[nextOrder][0]].every((e) => e)) ++nextOrder;
     nextOrder !== phaseOrder && setPhaseOrder(nextOrder);
   }, [condition]);
   const re = useMemo(() => {
@@ -33,10 +35,10 @@ export function useDTJ<T extends number | string>(
         ];
       })
     );
-  }, []);
+  }, []) as Record<T, ((value?: boolean) => boolean)[]>;
   const reset = useCallback(() => {
-    for (const arr of Object.values(condition)) arr.fill(false);
+    for (const arr of Object.values<boolean[]>(condition)) arr.fill(false);
     setPhaseOrder(0);
   }, []);
-  return [phaseConfig.current[phaseOrder][0], re as Record<T, ((value?: boolean) => boolean)[]>, reset];
+  return [phaseConfig[phaseOrder][0], re, reset];
 }

@@ -1,101 +1,43 @@
+@img: './../images';
+
 #MainP {
+  --options-mask-svg: url('@{img}/gear.svg');
   position: absolute;
   height: 100%;
   width: 100%;
-  .placeBox {
-    position: absolute;
-    top: 0;
-    overflow: hidden;
-    width: 100%;
-    height: 100%;
-    &.hide {
+  user-select: none;
+  --text-bar-header-height: 0.5rem;
+  --text-bar-body-height: 2.5rem;
+  --text-bar-fn-button-width: 0.45rem;
+  img {
+    -webkit-user-drag: none;
+    &[src=''],
+    &:not([src]) {
       opacity: 0;
-    }
-    &.in {
-      animation: in 0.5s ease-in-out both;
-    }
-    img {
-      background-color: black;
-      width: 100%;
-      height: 100%;
-    }
-    @keyframes in {
-      0% {
-        opacity: 0;
-      }
-      100% {
-        opacity: 1;
-      }
     }
   }
+}
 
-  .charaBox {
-    position: absolute;
-    top: 0;
-    overflow: hidden;
-    width: 30%;
-    &.hide {
-      opacity: 0;
-    }
-    @keyframes in {
-      0% {
-        opacity: 0;
-      }
-      100% {
-        opacity: 1;
-      }
-    }
-    &.out {
-      animation: in 0.5s ease-in-out both reverse;
-    }
-    &.in {
-      animation: in 0.5s ease-in-out both;
-    }
-    @keyframes shake {
-      0% {
-        transform: translateX(0rem);
-      }
-      20% {
-        transform: translateX(-0.1rem);
-      }
-      40% {
-        transform: translateX(0.1rem);
-      }
-      60% {
-        transform: translateX(-0.1rem);
-      }
-      80% {
-        transform: translateX(0.1rem);
-      }
-      100% {
-        transform: translateX(0rem);
-      }
-    }
-    &.move-shake {
-      animation: shake 0.8s ease-in-out;
-    }
-    @keyframes nod {
-      0% {
-        transform: translateY(0rem);
-      }
-      40% {
-        transform: translateY(0.1rem);
-      }
-      100% {
-        transform: translateY(0rem);
-      }
-    }
-    &.move-nod {
-      animation: nod 0.5s ease-in-out;
-    }
-    img {
-      background-color: transparent;
-      width: 100%;
-      height: 100%;
-      opacity: 0;
-    }
-    img[src] {
-      opacity: unset;
-    }
+.header-btns-bar {
+  position: absolute;
+  z-index: 200;
+  width: 2rem;
+  margin-left: 14rem;
+  box-sizing: border-box;
+  padding-right: 0.2rem;
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: row-reverse;
+  gap: 0.2rem;
+
+  .close {
+    mask-image: url('@{img}/close.svg');
+    mask-size: auto 125%;
+    mask-position: center;
+    background-color: rgb(232, 232, 232, 0.8);
+    height: 0.5rem;
+    width: 0.5rem;
+    border-radius: 0.1rem;
+    cursor: pointer;
   }
 }

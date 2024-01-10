@@ -23,9 +23,12 @@ function Test() {
   };
   // if (countt !== count) countt = count;
   return (
-    <div style={{ position: 'fixed', display: 'flex' }}>
-      <button onClick={() => handle(0x00000000)}>{'test'}</button>
-      <button onClick={() => handle(0x01000000)}>{'test2'}</button>
+    <div style={{ position: 'fixed', display: 'flex', zIndex: 10000 }}>
+      {['00000000', '00000008', '01000000'].map((e, i) => (
+        <button onClick={() => handle(parseInt(e, 16))} key={i}>
+          {'0x' + e}
+        </button>
+      ))}
     </div>
   );
 }

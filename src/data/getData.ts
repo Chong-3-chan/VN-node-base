@@ -141,7 +141,8 @@ export function getSrc(fileKey: string) {
   return record.code;
 }
 export namespace EXStaticSentence {
-  const uniqueFns = ['Place', 'CG', 'CGOut', 'BGM', 'voice'];
+  const uniqueFns = ['Place', 'CG', 'CGOut', 'BGM', 'voice', 'choice'];
+  const lazyFns = ['Place', 'CG', 'CGOut', 'BGM'];
   const map: Record<string, (state: Data.EXStaticSentence['state'], props: any) => void> = {
     Place: function (state, props: any[]) {
       if (state!.place !== void 0) throw new Error(`一个语句出现多个Place`);
@@ -170,16 +171,19 @@ export namespace EXStaticSentence {
       state!.BGM = props[0] ?? null;
     },
     voice: function (state, props: any[]) {
-      if (state!.voice !== void 0) throw new Error(`一个语句出现多个voice`);
-      state!.voice = props[0] ?? null;
+      if (state!.voice !== null) throw new Error(`一个语句出现多个voice`);
+      state!.voice = props[0];
+    },
+    choice: function (state, props: any[]) {
+      if (state!.choice !== null) throw new Error(`一个语句出现多个choice`);
+      state!.choice = props;
     },
   };
   function writeState(base: Data.SentenceState, sentence: Data.EXStaticSentence) {
     if (sentence.state) return;
     const { fns } = sentence;
     const charaMoveFns = fns.filter(([e]) => e === 'charaMove');
-    console.log(fns);
-    const tempState: typeof base = {};
+    const tempState: typeof base = { voice: null, choice: null, loadList: [] };
     fns.forEach(([fnName, props]) => {
       const todo = map[fnName];
       todo && todo(tempState, props);
@@ -203,20 +207,27 @@ export namespace EXStaticSentence {
     });
     if (nextState.charas && Object.keys(nextState.charas).length === 0) delete nextState.charas;
 
+    // charas,
+    const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
+    nextState.loadList.push(
+      ...getFileKeysKeys.filter((key) => nextState[key]).map((key) => nextState[key] as string),
+      ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key))
+    );
+
     sentence.state = deepClone(nextState);
     // const newNeed = new Set(base);
   }
-  function getParagraphBaseNeed(ParagraphRecord: VN.StaticStory['ParagraphRecord'], nowParagraph: VN.Paragraph) {
+  function getParagraphBaseNeed(paragraphRecord: VN.StaticStory['paragraphRecord'], nowParagraph: VN.Paragraph) {
     const { source } = nowParagraph;
     if (source.length === 0) return {};
     // @ts-ignore: findLastIndex
-    const lastGotNeedIndex = source.findLastIndex((paragraphKey: string) => Data.sentenceCache.get(ParagraphRecord[paragraphKey].end)?.state);
+    const lastGotNeedIndex = source.findLastIndex((paragraphKey: string) => Data.sentenceCache.get(paragraphRecord[paragraphKey].end)?.state);
     const lastState: Data.SentenceState =
-      lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(ParagraphRecord[source[lastGotNeedIndex]].end)!.state);
+      lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(paragraphRecord[source[lastGotNeedIndex]].end)!.state);
     for (let i = lastGotNeedIndex + 1; i < source.length; ++i) {
-      for (let j = ParagraphRecord[source[i]].start; j <= ParagraphRecord[source[i]].end; ++j) writeState(lastState, Data.sentenceCache.get(j)!);
+      for (let j = paragraphRecord[source[i]].start; j <= paragraphRecord[source[i]].end; ++j) writeState(lastState, Data.sentenceCache.get(j)!);
     }
-    return deepClone(Data.sentenceCache.get(ParagraphRecord[source[source.length - 1]].end)!.state);
+    return deepClone(Data.sentenceCache.get(paragraphRecord[source[source.length - 1]].end)!.state);
   }
   export function getState(ID: VN.StaticSentence['ID']) {
     const sentence = Data.sentenceCache.get(ID);
@@ -231,10 +242,10 @@ export namespace EXStaticSentence {
     }
     const { staticBookID, staticStoryID, staticSentenceID } = VN.decodeStaticSentenceID(ID);
     const nextBook = Data.staticBookRecord[Data.Book_KeyIDEnum[staticBookID]];
-    const { ParagraphRecord } = Data.staticStoryRecord[nextBook.Story_KeyIDEnum[staticStoryID]];
-    const nowParagraph = Object.values(ParagraphRecord).find(({ start, end }) => staticSentenceID >= start && staticSentenceID <= end);
+    const { paragraphRecord } = Data.staticStoryRecord[nextBook.Story_KeyIDEnum[staticStoryID]];
+    const nowParagraph = Object.values(paragraphRecord).find(({ start, end }) => staticSentenceID >= start && staticSentenceID <= end);
     if (nowParagraph === void 0) throw new Error(`getState(): 未找到包含 0x${staticSentenceID.toString(16)} 的段落`);
-    const nowParagraphBaseNeed = getParagraphBaseNeed(ParagraphRecord, nowParagraph);
+    const nowParagraphBaseNeed = getParagraphBaseNeed(paragraphRecord, nowParagraph);
     for (let i = nowParagraph.start; i <= ID; ++i) writeState(nowParagraphBaseNeed, Data.sentenceCache.get(i)!);
     return sentence.state!;
   }

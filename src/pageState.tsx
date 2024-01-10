@@ -14,11 +14,34 @@ type PageState = {
   activePage: ActivePageEnum | null;
   LoadingPProps: LoadingPProps | null;
   sentenceID: number | null;
+  currentKeys:
+    | {
+        book: null;
+        story: null;
+        paragraph: null;
+      }
+    | {
+        book: string;
+        story: string;
+        paragraph: string;
+      };
+  currentObjs:
+    | {
+        book: null;
+        story: null;
+        paragraph: null;
+      }
+    | {
+        book: VN.StaticBook;
+        story: VN.StaticStory;
+        paragraph: VN.Paragraph;
+      };
 };
 type PageAction = {
   load: (args: PageState['LoadingPProps']) => void;
   setActivePage: (nextActivePage: ActivePageEnum, sentenceId?: number) => void;
   setSentenceID: (nextSentenceID: number) => Promise<void>;
+  jumpToParagraphEndToStory: () => Promise<void>;
 };
 function getHomePLoadList(): string[] {
   const BGM = homeResource.BGM;
@@ -44,6 +67,16 @@ const pageStateInit: PageState = (() => {
       },
     },
     sentenceID: null,
+    currentKeys: {
+      book: null,
+      story: null,
+      paragraph: null,
+    },
+    currentObjs: {
+      book: null,
+      story: null,
+      paragraph: null,
+    },
   };
 })();
 
@@ -59,7 +92,37 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
   const [activePage, activePageSetter] = useState<PageState['activePage']>(pageStateInit.activePage);
   const [LoadingPProps, LoadingPPropsSetter] = useState<PageState['LoadingPProps']>(pageStateInit.LoadingPProps);
   const [sentenceID, sentenceIDSetter] = useState<PageState['sentenceID']>(pageStateInit.sentenceID);
-  const pageState: PageState = { activePage, LoadingPProps, sentenceID };
+  const currentKeys = useMemo(() => {
+    if (sentenceID === null) {
+      return pageStateInit.currentKeys;
+    } else {
+      const bookKey = Book_KeyIDEnum[sentenceID >> 24];
+      const storyKey = staticBookRecord[bookKey].Story_KeyIDEnum[sentenceID >> 16];
+      const paragraphKey = Object.values(staticStoryRecord[storyKey].paragraphRecord).find(
+        ({ start, end }) => sentenceID >= start && sentenceID <= end
+      )!.key;
+      return {
+        book: bookKey,
+        story: storyKey,
+        paragraph: paragraphKey,
+      };
+    }
+  }, [sentenceID]);
+  const currentObjs = useMemo(() => {
+    if (currentKeys.book === null) {
+      return pageStateInit.currentObjs;
+    } else {
+      const bookObj = staticBookRecord[currentKeys.book];
+      const storyObj = staticStoryRecord[currentKeys.story];
+      const paragraphObj = storyObj.paragraphRecord[currentKeys.paragraph];
+      return {
+        book: bookObj,
+        story: storyObj,
+        paragraph: paragraphObj,
+      };
+    }
+  }, [sentenceID]);
+  const pageState: PageState = { activePage, LoadingPProps, sentenceID, currentKeys, currentObjs };
   const load = useCallback<PageAction['load']>(
     (args: LoadingPProps | null) => {
       console.log(args, LoadingPProps);
@@ -81,22 +144,19 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
         const last = VN.decodeStaticSentenceID(sentenceID);
         if (last.staticStoryID === nextStaticStoryID) {
           // 只跳语句：history功能 不触发load 具体UI效果在MainP实现(检查pageState.sentenceID变化)
-          // todo: 跳转语句后，MainP状态需要重计算。应在MainP实现。
           firstSentence = sentenceCache.get(nextSentenceID);
           console.log(firstSentence);
           if (firstSentence === void 0) throw new Error(`setSentenceID(): nextSentenceID有误: ${nextSentenceID}`);
           // await updateFileCache(VN.getFnsNeedFilekeys(firstSentence)); // todo: 更正
           const nextState = EXStaticSentence.getState(nextSentenceID);
-          const loadList = Object.values(nextState)
-            .map((e) => (typeof e !== 'object' || e === null ? e : Object.values(e).map((e) => e!.key)))
-            .flat(1)
-            .filter((e) => e);
+          const loadList = nextState.loadList;
           await updateFileCache(loadList as string[]);
           sentenceIDSetter(nextSentenceID);
           return;
         }
         if (last.staticBookID !== nextStaticBookID) {
           // 洗掉story的KKV
+          // todo: 最后未使用-限制缓存大小
           console.log('洗story', last.staticBookID, nextStaticBookID);
           for (const key in staticStoryRecord) delete staticStoryRecord[key];
         }
@@ -117,7 +177,6 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
           out: [() => activePageSetter(ActivePageEnum.MainP)],
         },
         onLoaded: async () => {
-          // await updateFileCache(VM.getFnsNeedFilekeys(firstSentence)); // todo: 更正
           sentenceCache.clear();
           await VN.StaticSentence.getRecordsFromDB(nextStaticStoryID).then((arr) =>
             arr.forEach((sentence: VN.StaticSentence) => sentenceCache.set(sentence.ID, sentence))
@@ -171,8 +230,30 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
     },
     [load, setSentenceID]
   );
-
-  const pageAction: PageAction = { setActivePage, load, setSentenceID };
+  const jumpToParagraphEndToStory = useCallback<PageAction['jumpToParagraphEndToStory']>(() => {
+    if (!currentObjs.book) throw new Error(`jumpToParagraphEndToStory(): 未进入故事就尝试跳转`);
+    const nextStoryKey = currentObjs.paragraph.endToStory;
+    if (typeof nextStoryKey !== 'string') {
+      throw new Error(`jumpToParagraphEndToStory(): 未找到故事Key(${nextStoryKey})对应ID，于: \n${JSON.stringify(currentObjs.paragraph, null, 2)}`);
+    } else if (nextStoryKey.length === 0) {
+      // 检查book结束
+      const endText = Object.fromEntries(currentObjs.book.end)[currentKeys.story!];
+      if (endText === void 0) throw new Error(`异常的book(${currentKeys.book})结束于story: ${currentKeys.story}`);
+      else {
+        alert(endText);
+        setActivePage(ActivePageEnum.HomeP);
+        return Promise.resolve();
+      }
+    }
+    const nextStoryID = currentObjs.book.Story_KeyIDEnum[nextStoryKey];
+    if (typeof nextStoryID !== 'number') {
+      throw new Error(
+        `jumpToParagraphEndToStory(): 未找到故事Key(${nextStoryKey})对应ID，于: \n${JSON.stringify(currentObjs.book.Story_KeyIDEnum, null, 2)}`
+      );
+    }
+    return setSentenceID(nextStoryID << 16);
+  }, [currentKeys, setSentenceID, setActivePage]);
+  const pageAction: PageAction = { setActivePage, load, setSentenceID, jumpToParagraphEndToStory };
   return (
     <pageStateContext.Provider value={pageState}>
       <pageActionContext.Provider value={pageAction}>{children}</pageActionContext.Provider>
@@ -185,6 +266,8 @@ const pageActionCurrent: any = {};
 export function usePageState() {
   const pageState = useContext(pageStateContext);
   const pageAction = useContext(pageActionContext);
+  (window as any).pageState = pageState;
+  (window as any).pageAction = pageAction;
   Object.entries(pageState).forEach(([k, v]) => pageStateCurrent[k] !== v && (pageStateCurrent[k] = v));
   Object.entries(pageAction).forEach(([k, v]) => pageActionCurrent[k] !== v && (pageActionCurrent[k] = v));
   return { pageState: pageStateCurrent as PageState, pageAction: pageActionCurrent as PageAction, PageStateProvider };

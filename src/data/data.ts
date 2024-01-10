@@ -19,6 +19,7 @@ export const charaRecord = new KKVRecord<CharaInfo>();
 export const tipsGroupRecord = new KKVRecord<TipsGroup>();
 
 export const Book_KeyIDEnum: VN.KeyIDEnum = {};
+// Book_KeyIDEnum在StaticBook构造时被填充
 export const staticStoryRecord = new KKVRecord<VN.StaticStory>();
 export const staticBookRecord = new KKVRecord<VN.StaticBook>();
 export type SentenceState = {
@@ -28,8 +29,11 @@ export type SentenceState = {
     CharaInfo['key'],
     { key: string; position: string; move?: [string, ...VN.fnProps][] & Record<number, [string, ...VN.fnProps]> } | null
   >;
-  voice?: string | null;
   BGM?: string | null;
+
+  voice?: string | null;
+  choice?: [type: 'para' | 'story', nextAny: string, text: string][] | null;
+  loadList: string[];
 };
 export interface EXStaticSentence extends VN.StaticSentence {
   state?: SentenceState;

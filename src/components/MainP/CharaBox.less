@@ -1,0 +1,199 @@
+#MainP {
+  .chara-box {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    overflow: hidden;
+    width: 100%;
+    &.hide {
+      opacity: 0;
+    }
+
+    // A
+    img {
+      object-fit: contain;
+    }
+    &.A1,
+    &.A1L,
+    &.A1R,
+    &.A2,
+    &.A2L,
+    &.A2R,
+    &.A3,
+    &.A3L,
+    &.A3R {
+      height: 100%;
+    }
+    &.A1 {
+      left: -32%;
+    }
+    &.A1L {
+      left: -46%;
+    }
+    &.A1R {
+      left: -18%;
+    }
+    &.A2 {
+      left: 0%;
+    }
+    &.A2L {
+      left: -14%;
+    }
+    &.A2R {
+      left: 14%;
+    }
+    &.A3 {
+      left: 32%;
+    }
+    &.A3L {
+      left: 18%;
+    }
+    &.A3R {
+      left: 46%;
+    }
+
+    // B
+    &.B1,
+    &.B1L,
+    &.B1R,
+    &.B2,
+    &.B2L,
+    &.B2R,
+    &.B3,
+    &.B3L,
+    &.B3R {
+      height: 90%;
+    }
+    &.B1 {
+      left: -32%;
+    }
+    &.B1L {
+      left: -46%;
+    }
+    &.B1R {
+      left: -18%;
+    }
+    &.B2 {
+      left: 0%;
+    }
+    &.B2L {
+      left: -14%;
+    }
+    &.B2R {
+      left: 14%;
+    }
+    &.B3 {
+      left: 32%;
+    }
+    &.B3L {
+      left: 18%;
+    }
+    &.B3R {
+      left: 46%;
+    }
+
+    // C
+    &.C1,
+    &.C1L,
+    &.C1R,
+    &.C2,
+    &.C2L,
+    &.C2R,
+    &.C3,
+    &.C3L,
+    &.C3R {
+      height: 80%;
+    }
+    &.C1 {
+      left: -32%;
+    }
+    &.C1L {
+      left: -46%;
+    }
+    &.C1R {
+      left: -18%;
+    }
+    &.C2 {
+      left: 0%;
+    }
+    &.C2L {
+      left: -14%;
+    }
+    &.C2R {
+      left: 14%;
+    }
+    &.C3 {
+      left: 32%;
+    }
+    &.C3L {
+      left: 18%;
+    }
+    &.C3R {
+      left: 46%;
+    }
+    &.out {
+      @keyframes out {
+        0% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
+      animation: out 0.5s ease-in-out both;
+    }
+    &.in {
+      @keyframes in {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+      animation: in 0.5s ease-in-out both;
+    }
+    &.move-shake {
+      @keyframes shake {
+        0% {
+          transform: translateX(0rem);
+        }
+        20% {
+          transform: translateX(-0.1rem);
+        }
+        40% {
+          transform: translateX(0.1rem);
+        }
+        60% {
+          transform: translateX(-0.1rem);
+        }
+        80% {
+          transform: translateX(0.1rem);
+        }
+        100% {
+          transform: translateX(0rem);
+        }
+      }
+      animation: shake 0.8s ease-in-out;
+    }
+    &.move-nod {
+      @keyframes nod {
+        0% {
+          transform: translateY(0rem);
+        }
+        40% {
+          transform: translateY(0.1rem);
+        }
+        100% {
+          transform: translateY(0rem);
+        }
+      }
+      animation: nod 0.5s ease-in-out;
+    }
+    img {
+      background-color: transparent;
+      width: 100%;
+      height: 100%;
+    }
+  }
+}

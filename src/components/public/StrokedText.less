@@ -1,0 +1,20 @@
+.stroked-text {
+  position: relative;
+  color: transparent;
+  font-weight: bolder;
+  & > .single-char {
+    position: relative;
+    & > .back {
+      position: absolute;
+      left: 0;
+      top: 0;
+      filter: blur(0.002rem);
+      -webkit-text-stroke-width: 0.01rem;
+    }
+    & > .front {
+      left: 0;
+      top: 0;
+      position: absolute;
+    }
+  }
+}

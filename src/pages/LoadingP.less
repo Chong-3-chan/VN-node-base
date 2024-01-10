@@ -1,302 +1,326 @@
-@img: './images';
+@img: './../images';
 
 #LoadingP {
-    // 参数
-    --style-color1-value: 41, 82, 59;
-    --style-color2-value: 247, 223, 190;
-    // --style-color1-value: 0, 49, 83;
-    // --style-color2-value: 229, 221, 215;
-    --percentage: 0;
-    --font-size-title: .8rem;
-    --font-size-tips-title: .35rem;
-    --font-size-tips-text: .2rem;
-    --header-height: 1.88rem;
-    --footer-height: 3.58rem;
-    --transition-width: 2rem;
-    --loading-mask-svg: url("@{img}/logo.svg");
-    --back-dx: 0rem;
-    --back-dy: 0rem;
-    --transition-delay-short: 1s;
-    --transition-delay-long: 1.5s;
-    --tips-switch-delay: .3s;
-    --background:radial-gradient(transparent 93%, rgba(var(--style-color2-value), 0.24) 94%) 1rem 1rem,
-    radial-gradient(transparent 93%, rgba(var(--style-color2-value), 0.16) 94%) .5rem .5rem,
+  // 参数
+  --style-color1-value: 41, 82, 59;
+  --style-color2-value: 247, 223, 190;
+  // --style-color1-value: 0, 49, 83;
+  // --style-color2-value: 229, 221, 215;
+  --percentage: 0;
+  --font-size-title: 0.8rem;
+  --font-size-tips-title: 0.35rem;
+  --font-size-tips-text: 0.2rem;
+  --header-height: 1.88rem;
+  --footer-height: 3.58rem;
+  --transition-width: 2rem;
+  --loading-mask-svg: url('@{img}/logo.svg');
+  --back-dx: 0rem;
+  --back-dy: 0rem;
+  --transition-delay-short: 1s;
+  --transition-delay-long: 1.5s;
+  --tips-switch-delay: 0.3s;
+  --background: radial-gradient(transparent 93%, rgba(var(--style-color2-value), 0.24) 94%) 1rem 1rem,
+    radial-gradient(transparent 93%, rgba(var(--style-color2-value), 0.16) 94%) 0.5rem 0.5rem,
     radial-gradient(transparent 93%, rgba(var(--style-color2-value), 0.08) 94%),
-    linear-gradient(rgba(var(--style-color2-value), 0.05), rgba(var(--style-color2-value), 0.05) 2%, transparent 2%, transparent 31%, rgba(var(--style-color2-value), 0.05) 31%, rgba(var(--style-color2-value), 0.05) 35%, transparent 35%, transparent 65%, rgba(var(--style-color2-value), 0.05) 65%, rgba(var(--style-color2-value), 0.05) 69%, transparent 69%, transparent 98%, rgba(var(--style-color2-value), 0.05) 98%),
-    linear-gradient(to right, rgba(var(--style-color2-value), 0.05), rgba(var(--style-color2-value), 0.05) 2%, transparent 2%, transparent 31%, rgba(var(--style-color2-value), 0.05) 31%, rgba(var(--style-color2-value), 0.05) 35%, transparent 35%, transparent 65%, rgba(var(--style-color2-value), 0.05) 65%, rgba(var(--style-color2-value), 0.05) 69%, transparent 69%, transparent 98%, rgba(var(--style-color2-value), 0.05) 98%),
+    linear-gradient(
+      rgba(var(--style-color2-value), 0.05),
+      rgba(var(--style-color2-value), 0.05) 2%,
+      transparent 2%,
+      transparent 31%,
+      rgba(var(--style-color2-value), 0.05) 31%,
+      rgba(var(--style-color2-value), 0.05) 35%,
+      transparent 35%,
+      transparent 65%,
+      rgba(var(--style-color2-value), 0.05) 65%,
+      rgba(var(--style-color2-value), 0.05) 69%,
+      transparent 69%,
+      transparent 98%,
+      rgba(var(--style-color2-value), 0.05) 98%
+    ),
+    linear-gradient(
+      to right,
+      rgba(var(--style-color2-value), 0.05),
+      rgba(var(--style-color2-value), 0.05) 2%,
+      transparent 2%,
+      transparent 31%,
+      rgba(var(--style-color2-value), 0.05) 31%,
+      rgba(var(--style-color2-value), 0.05) 35%,
+      transparent 35%,
+      transparent 65%,
+      rgba(var(--style-color2-value), 0.05) 65%,
+      rgba(var(--style-color2-value), 0.05) 69%,
+      transparent 69%,
+      transparent 98%,
+      rgba(var(--style-color2-value), 0.05) 98%
+    ),
     rgba(var(--style-color1-value), 1);
 
-    --backdrop-filter: blur(.06rem) brightness(2) contrast(1.25);
+  --backdrop-filter: blur(0.06rem) brightness(2) contrast(1.25);
 
-    // 常量
-    --style-color1: rgb(var(--style-color1-value));
-    --style-color2: rgb(var(--style-color2-value));
-    width: calc(16rem + 2 * var(--transition-width));
+  // 常量
+  --style-color1: rgb(var(--style-color1-value));
+  --style-color2: rgb(var(--style-color2-value));
+  width: calc(16rem + 2 * var(--transition-width));
 
-    &.init .body {
-        transform: translateX(calc(-16rem - 2*var(--transition-width)));
-        --back-dx: calc(16rem + 1*var(--transition-width) + 1rem);
+  &.init .body {
+    transform: translateX(calc(-16rem - 2 * var(--transition-width)));
+    --back-dx: calc(16rem + 1 * var(--transition-width) + 1rem);
 
-        .word {
-            transform: translateX(calc(16rem + 2*var(--transition-width) - 1rem));
-            filter: brightness(0) opacity(0);
-        }
-
-        .logo-mask {
-            transform: translateX(calc(var(--back-dx) - 3rem));
-            filter: brightness(0) opacity(0);
-        }
-
+    .word {
+      transform: translateX(calc(16rem + 2 * var(--transition-width) - 1rem));
+      filter: brightness(0) opacity(0);
     }
 
-    &.in .body {
-        transform: translateX(calc(-1 * var(--transition-width)));
-        --back-dx: calc(0rem);
+    .logo-mask {
+      transform: translateX(calc(var(--back-dx) - 3rem));
+      filter: brightness(0) opacity(0);
+    }
+  }
 
-        .word {
-            transform: translateX(calc(1 * var(--transition-width)));
-            filter: brightness(1) opacity(1);
-        }
+  &.in .body {
+    transform: translateX(calc(-1 * var(--transition-width)));
+    --back-dx: calc(0rem);
 
-        .logo-mask {
-            transform: translateX(calc(var(--back-dx)));
-            filter: brightness(1) opacity(1);
-        }
-
+    .word {
+      transform: translateX(calc(1 * var(--transition-width)));
+      filter: brightness(1) opacity(1);
     }
 
-    &.out .body {
-        transform: translateX(calc(16rem + 1*var(--transition-width)));
-        --back-dx: calc(-16rem - 1*var(--transition-width) + 1rem);
+    .logo-mask {
+      transform: translateX(calc(var(--back-dx)));
+      filter: brightness(1) opacity(1);
+    }
+  }
 
-        .word {
-            transform: translateX(calc(-16rem - 1*var(--transition-width) + 3rem));
-            filter: brightness(0) opacity(0);
-        }
+  &.out .body {
+    transform: translateX(calc(16rem + 1 * var(--transition-width)));
+    --back-dx: calc(-16rem - 1 * var(--transition-width) + 1rem);
 
-        .logo-mask {
-            transform: translateX(calc(var(--back-dx) + 4rem));
-            filter: brightness(0) opacity(0);
-        }
-
+    .word {
+      transform: translateX(calc(-16rem - 1 * var(--transition-width) + 3rem));
+      filter: brightness(0) opacity(0);
     }
 
-    .body {
-        transition: transform var(--transition-delay-short);
-        --mask-image-value: linear-gradient(to right,
-                transparent 0%,
-                black var(--transition-width),
-                black calc(16rem + var(--transition-width)),
-                transparent calc(16rem + 2 * var(--transition-width)));
-        -webkit-mask-image: var(--mask-image-value);
-        mask-image: var(--mask-image-value);
-        height: 100%;
-        width: 100%;
-        overflow: hidden;
-        background-color: #f00;
+    .logo-mask {
+      transform: translateX(calc(var(--back-dx) + 4rem));
+      filter: brightness(0) opacity(0);
+    }
+  }
 
-        &::before {
-            content: "";
-            transition: left var(--transition-delay-short), filter var(--transition-delay-short);
-            position: absolute;
-            height: calc(var(--transition-width) + 32rem);
-            width: calc(var(--transition-width) + 32rem);
-            left: calc(-16rem - 1rem + 8rem + var(--back-dx));
-            right: calc(-16rem - 1rem + 8rem);
-            top: calc(-16rem - 1rem + 4.5rem);
-            background:var(--background);
-            background-size: 1.5rem 1.5rem;
-            transform: rotate(45deg) translateY(0rem);
-            animation: role 2.5s linear infinite;
-        }
+  .body {
+    transition: transform var(--transition-delay-short);
+    --mask-image-value: linear-gradient(
+      to right,
+      transparent 0%,
+      black var(--transition-width),
+      black calc(16rem + var(--transition-width)),
+      transparent calc(16rem + 2 * var(--transition-width))
+    );
+    -webkit-mask-image: var(--mask-image-value);
+    mask-image: var(--mask-image-value);
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background-color: #f00;
 
-        @keyframes role {
-            0% {
-                transform: rotate(45deg) translateY(0rem);
-            }
-
-            100% {
-                transform: rotate(45deg) translateY(1.5rem);
-            }
-        }
-
-        .word {
-            transition: transform var(--transition-delay-short), filter var(--transition-delay-short);
-            position: relative;
-            color: var(--style-color1);
-            overflow: visible;
-            user-select: none;
-            height: 9rem;
-            width: 16rem;
-
-            .title {
-                position: absolute;
-                top: 0;
-                left: 0;
-                font-size: var(--font-size-title);
-                line-height: var(--header-height);
-                margin-left: .6rem;
-            }
-
-            .tip-title {
-                transition: transform var(--tips-switch-delay), filter var(--tips-switch-delay);
-                filter: opacity(1);
-                transform: translateX(0rem);
-
-                position: absolute;
-                top: 5.65rem;
-                left: .2rem;
-                text-indent: .15rem;
-                font-size: var(--font-size-tips-title);
-                line-height: calc(var(--font-size-tips-title) + .15rem);
-
-                filter: opacity(1);
-                transform: translateX(0rem);
-
-                &::before {
-                    content: '';
-                    position: absolute;
-                    left: -.2rem;
-                    height: 100%;
-                    width: .2rem;
-                    background-color: var(--style-color1);
-                }
-
-                &.out {
-                    filter: opacity(0);
-                    transform: translateX(-.2rem);
-                }
-            }
-
-            .tip-text {
-                transition: transform var(--tips-switch-delay), filter var(--tips-switch-delay);
-                filter: opacity(1);
-                transform: translateX(0rem);
-
-                position: absolute;
-                top: 6.25rem;
-                left: .3rem;
-                font-size: var(--font-size-tips-text);
-                line-height: calc(var(--font-size-tips-text) + .1rem);
-                max-width: 64%;
-                text-indent: .3rem;
-
-                &.out {
-                    filter: opacity(0);
-                    transform: translateX(-.2rem);
-                }
-            }
-
-            .exit {
-                transition: transform var(--tips-switch-delay), filter var(--tips-switch-delay);
-                filter: opacity(1);
-                transform: translateX(0rem);
-                position: absolute;
-                right: 0;
-                bottom: 0;
-                margin: .2rem .2rem;
-                font-size: .28rem;
-                line-height: .3rem;
-                cursor: pointer;
-                &.hide{
-                    filter: opacity(0);
-                    transform: translateX(-.2rem);
-                    cursor: unset;
-                }
-                &:hover{
-                    text-decoration: underline;
-                }
-            }
-        }
-
-
-
-        .logo-mask {
-            transition: transform var(--transition-delay-short), filter var(--transition-delay-long);
-            backdrop-filter: blur(.03rem);
-            -webkit-backdrop-filter: blur(.03rem);
-            mix-blend-mode: difference;
-            background-color: rgba(var(--style-color2-value), 0.2);
-            mask-repeat: no-repeat;
-            mask-position: center;
-            -webkit-mask-repeat: no-repeat;
-            -webkit-mask-position: center;
-            position: absolute;
-            width: 2rem;
-            height: 3rem;
-            top: 2.1rem;
-            left: calc(7rem + var(--transition-width));
-            right: calc(7rem + var(--transition-width));
-            mask-size: auto 100%;
-            -webkit-mask-size: auto 100%;
-            mask-image: var(--loading-mask-svg);
-            -webkit-mask-image: var(--loading-mask-svg);
-        }
-
-        .loading-back {
-            transition: width .5s;
-            -webkit-backdrop-filter: grayscale(.3);
-            backdrop-filter: grayscale(.3);
-            mix-blend-mode: plus-lighter;
-            background-image: linear-gradient(to right,
-                    rgba(var(--style-color2-value), 0.6) 0%,
-                    rgba(var(--style-color2-value), 0.7) 11.1%,
-                    rgba(var(--style-color2-value), 0.9) 33.3%,
-                    rgba(var(--style-color2-value), 0.7) 55.5%,
-                    rgba(var(--style-color2-value), 0.6) 66.6%,
-                    rgba(var(--style-color2-value), 0.7) 77.7%,
-                    rgba(var(--style-color2-value), 0.9) 100%);
-            background-size: 300% 100%;
-            height: 100%;
-            width: calc(.02rem * var(--percentage));
-            animation: loading-back 3s linear infinite;
-        }
-
-        @keyframes loading-back {
-            0% {
-                background-position-x: 100%;
-            }
-
-            100% {
-                background-position-x: 0%;
-            }
-        }
+    &::before {
+      content: '';
+      transition: left var(--transition-delay-short), filter var(--transition-delay-short);
+      position: absolute;
+      height: calc(var(--transition-width) + 32rem);
+      width: calc(var(--transition-width) + 32rem);
+      left: calc(-16rem - 1rem + 8rem + var(--back-dx));
+      right: calc(-16rem - 1rem + 8rem);
+      top: calc(-16rem - 1rem + 4.5rem);
+      background: var(--background);
+      background-size: 1.5rem 1.5rem;
+      transform: rotate(45deg) translateY(0rem);
+      animation: role 2.5s linear infinite;
     }
 
-    .header {
-        background-color: rgba(var(--style-color2-value), .9);
-        width: 100%;
-        height: var(--header-height);
+    @keyframes role {
+      0% {
+        transform: rotate(45deg) translateY(0rem);
+      }
+
+      100% {
+        transform: rotate(45deg) translateY(1.5rem);
+      }
+    }
+
+    .word {
+      transition: transform var(--transition-delay-short), filter var(--transition-delay-short);
+      position: relative;
+      color: var(--style-color1);
+      overflow: visible;
+      user-select: none;
+      height: 9rem;
+      width: 16rem;
+
+      .title {
         position: absolute;
         top: 0;
         left: 0;
-        backdrop-filter: var(--backdrop-filter);
-        -webkit-backdrop-filter: var(--backdrop-filter);
-        mask-image: linear-gradient(to top,
-                black 0%,
-                black .05rem,
-                transparent .05rem,
-                transparent .08rem,
-                black .08rem,
-                black var(--header-height));
+        font-size: var(--font-size-title);
+        line-height: var(--header-height);
+        margin-left: 0.6rem;
+      }
+
+      .tip-title {
+        transition: transform var(--tips-switch-delay), filter var(--tips-switch-delay);
+        filter: opacity(1);
+        transform: translateX(0rem);
+
+        position: absolute;
+        top: 5.65rem;
+        left: 0.2rem;
+        text-indent: 0.15rem;
+        font-size: var(--font-size-tips-title);
+        line-height: calc(var(--font-size-tips-title) + 0.15rem);
+
+        filter: opacity(1);
+        transform: translateX(0rem);
+
+        &::before {
+          content: '';
+          position: absolute;
+          left: -0.2rem;
+          height: 100%;
+          width: 0.2rem;
+          background-color: var(--style-color1);
+        }
+
+        &.out {
+          filter: opacity(0);
+          transform: translateX(-0.2rem);
+        }
+      }
+
+      .tip-text {
+        transition: transform var(--tips-switch-delay), filter var(--tips-switch-delay);
+        filter: opacity(1);
+        transform: translateX(0rem);
+
+        position: absolute;
+        top: 6.25rem;
+        left: 0.3rem;
+        font-size: var(--font-size-tips-text);
+        line-height: calc(var(--font-size-tips-text) + 0.1rem);
+        max-width: 64%;
+        text-indent: 0.3rem;
+
+        &.out {
+          filter: opacity(0);
+          transform: translateX(-0.2rem);
+        }
+      }
+
+      .exit {
+        transition: transform var(--tips-switch-delay), filter var(--tips-switch-delay);
+        filter: opacity(1);
+        transform: translateX(0rem);
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        margin: 0.2rem 0.2rem;
+        font-size: 0.28rem;
+        line-height: 0.3rem;
+        cursor: pointer;
+        &.hide {
+          filter: opacity(0);
+          transform: translateX(-0.2rem);
+          cursor: unset;
+        }
+        &:hover {
+          text-decoration: underline;
+        }
+      }
     }
 
-    .footer {
-        background-color: rgba(var(--style-color2-value), .9);
-        width: 100%;
-        height: var(--footer-height);
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        backdrop-filter: var(--backdrop-filter);
-        -webkit-backdrop-filter: var(--backdrop-filter);
-        mask-image: linear-gradient(to bottom,
-                black 0%,
-                black .05rem,
-                transparent .05rem,
-                transparent .08rem,
-                black .08rem,
-                black var(--footer-height),
-                transparent var(--footer-height));
+    .logo-mask {
+      transition: transform var(--transition-delay-short), filter var(--transition-delay-long);
+      backdrop-filter: blur(0.03rem);
+      -webkit-backdrop-filter: blur(0.03rem);
+      mix-blend-mode: difference;
+      background-color: rgba(var(--style-color2-value), 0.2);
+      mask-repeat: no-repeat;
+      mask-position: center;
+      -webkit-mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      position: absolute;
+      width: 2rem;
+      height: 3rem;
+      top: 2.1rem;
+      left: calc(7rem + var(--transition-width));
+      right: calc(7rem + var(--transition-width));
+      mask-size: auto 100%;
+      -webkit-mask-size: auto 100%;
+      mask-image: var(--loading-mask-svg);
+      -webkit-mask-image: var(--loading-mask-svg);
     }
+
+    .loading-back {
+      transition: width 0.5s;
+      -webkit-backdrop-filter: grayscale(0.3);
+      backdrop-filter: grayscale(0.3);
+      mix-blend-mode: plus-lighter;
+      background-image: linear-gradient(
+        to right,
+        rgba(var(--style-color2-value), 0.6) 0%,
+        rgba(var(--style-color2-value), 0.7) 11.1%,
+        rgba(var(--style-color2-value), 0.9) 33.3%,
+        rgba(var(--style-color2-value), 0.7) 55.5%,
+        rgba(var(--style-color2-value), 0.6) 66.6%,
+        rgba(var(--style-color2-value), 0.7) 77.7%,
+        rgba(var(--style-color2-value), 0.9) 100%
+      );
+      background-size: 300% 100%;
+      height: 100%;
+      width: calc(0.02rem * var(--percentage));
+      animation: loading-back 3s linear infinite;
+    }
+
+    @keyframes loading-back {
+      0% {
+        background-position-x: 100%;
+      }
+
+      100% {
+        background-position-x: 0%;
+      }
+    }
+  }
+
+  .header {
+    background-color: rgba(var(--style-color2-value), 0.9);
+    width: 100%;
+    height: var(--header-height);
+    position: absolute;
+    top: 0;
+    left: 0;
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    mask-image: linear-gradient(to top, black 0%, black 0.05rem, transparent 0.05rem, transparent 0.08rem, black 0.08rem, black var(--header-height));
+  }
+
+  .footer {
+    background-color: rgba(var(--style-color2-value), 0.9);
+    width: 100%;
+    height: var(--footer-height);
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    backdrop-filter: var(--backdrop-filter);
+    -webkit-backdrop-filter: var(--backdrop-filter);
+    mask-image: linear-gradient(
+      to bottom,
+      black 0%,
+      black 0.05rem,
+      transparent 0.05rem,
+      transparent 0.08rem,
+      black 0.08rem,
+      black var(--footer-height),
+      transparent var(--footer-height)
+    );
+  }
 }

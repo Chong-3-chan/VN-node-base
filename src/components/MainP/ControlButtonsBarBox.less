@@ -1,0 +1,168 @@
+#MainP {
+  .control-btns-bar-box {
+    z-index: 1;
+    // overflow: hidden;
+    position: absolute;
+    display: flex;
+    // align-items: center;
+    // justify-content: center;
+    right: 0;
+    bottom: 2.5rem;
+
+    & > .control-btns-bar {
+      z-index: 1;
+      font-size: 0.28rem;
+      text-align: center;
+      display: block;
+      width: auto;
+      height: var(--text-bar-header-height);
+      display: flex;
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 0.0275rem;
+      border-radius: 0.2rem 0 0 0.2rem;
+      transform: translateX(0%);
+      &.hide {
+        transition: background-color 0.3s, transform 0.4s ease-out;
+        transform: translateX(calc(100% + var(--text-bar-fn-button-width)));
+        pointer-events: none;
+      }
+
+      &.display {
+        transition: background-color 0.3s, transform 0.3s ease-in;
+        transform: translateX(0%);
+      }
+      & > .btn {
+        width: 1.6rem;
+        text-wrap: nowrap;
+        border: 0.02rem dashed #8888f599;
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        background-image: linear-gradient(to bottom, #ffffff06, #88888800, #00000006);
+        transition: transform 0.2s, background-color 0.2s;
+        &:hover {
+          filter: brightness(1.1);
+          transform: translateY(-0.01rem);
+          background-color: #dddddd33;
+          cursor: pointer;
+        }
+        &.active span {
+          @keyframes active-animation {
+            0% {
+              filter: drop-shadow(0 0 0.02rem #ffe89988);
+            }
+            100% {
+              filter: drop-shadow(0 0 0.01rem #ffe89988);
+            }
+          }
+          animation: active-animation 0.8s ease-in-out alternate-reverse infinite;
+          // filter: drop-shadow(0.1rem 0.1rem 0.1rem #fff)
+        }
+      }
+    }
+    & > .fn-box {
+      z-index: 2;
+      width: var(--text-bar-fn-button-width);
+      height: var(--text-bar-header-height);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 50%;
+      & > .fn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        // border: 0.05rem solid #f5f5f5;
+        width: calc(2 * var(--text-bar-fn-button-width));
+        height: calc(2 * var(--text-bar-header-height));
+        box-sizing: border-box;
+        transition: filter 0.2s, background-color 0.2s;
+        & .gear {
+          filter: opacity(0.8);
+          mask-image: var(--options-mask-svg);
+          mask-size: auto 100%;
+          -webkit-mask-image: var(--options-mask-svg);
+          -webkit-mask-size: 100% 100%;
+          background-color: #ffeebb;
+          transition: filter 0.2s, background-color 0.2s;
+          width: calc(0.618 * var(--text-bar-fn-button-width));
+          height: calc(0.618 * var(--text-bar-fn-button-width));
+        }
+        &.active {
+          @keyframes active-animation-force {
+            0% {
+              filter: drop-shadow(0 0 0.02rem #ffd888);
+              transform: rotate(0turn);
+            }
+            75% {
+              filter: drop-shadow(0 0 0.01rem #ffd888);
+              transform: rotate(0.25turn);
+            }
+            100% {
+              filter: drop-shadow(0 0 0.02rem #ffd888);
+              transform: rotate(0.125turn);
+            }
+          }
+          animation: active-animation-force 2s ease-in-out infinite;
+          & .gear {
+            background-color: #ffe899;
+          }
+        }
+
+        &:hover {
+          & .gear {
+            filter: opacity(1);
+          }
+        }
+        &.open {
+          border-radius: 0.2rem 0 0 0.2rem;
+          & .gear {
+            @keyframes open {
+              0% {
+                transform: rotate(0turn);
+              }
+              75% {
+                transform: rotate(0.3turn);
+              }
+              90% {
+                transform: rotate(0.3turn);
+              }
+              100% {
+                transform: rotate(0.25turn);
+              }
+            }
+            animation: open 0.3s ease-in-out both;
+          }
+        }
+        &.close {
+          border-radius: 0 0.2rem 0.2rem 0;
+          opacity: 1;
+          filter: opacity(1);
+          & .gear {
+            @keyframes close {
+              0% {
+                transform: rotate(0.25turn);
+              }
+              75% {
+                transform: rotate(-0.05turn);
+              }
+              90% {
+                transform: rotate(-0.05turn);
+              }
+              100% {
+                transform: rotate(0turn);
+              }
+            }
+            animation: close 0.3s ease-in-out both;
+          }
+        }
+        &.transforming {
+          border-radius: 0 !important;
+        }
+      }
+    }
+  }
+}

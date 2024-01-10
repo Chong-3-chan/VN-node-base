@@ -1,3 +1,4 @@
+/* eslint-disable complexity */
 import { KKVRecord, charaRecord, Book_KeyIDEnum, sentenceCache } from '../data/data';
 import * as GlobalSave from '../data/globalSave';
 import { dbh } from '../handle/IndexedDB';
@@ -14,7 +15,7 @@ export namespace VN {
   type Category = 'BOOK' | 'STORY';
   const equationLineTest = Object.freeze({
     BOOK: {
-      propNames: Object.freeze(['start', 'defaultStyle', 'end', 'cover', 'check']),
+      propNames: Object.freeze(['start', 'defaultStyle', 'cover', 'check']),
       RegExpMap: Object.freeze({
         start: /^".+?"$/,
         defaultStyle: /^".+?"$/,
@@ -24,7 +25,7 @@ export namespace VN {
       }),
     },
     STORY: {
-      propNames: Object.freeze(['title', 'end', 'tips']),
+      propNames: Object.freeze(['title', 'tips']),
       RegExpMap: Object.freeze({
         title: /^".+?"$/,
         end: /^\[".+?"(,".+?")*\]$/,
@@ -136,14 +137,26 @@ export namespace VN {
     key: string;
     start: number; // 0x0000 ~ 0xffff
     end: number; // === start+para.len-1
+    endToStory?: string;
     source: Paragraph['key'][];
-    to?: Paragraph['key'][];
-    constructor(key: string, startSentenceID: number, endSentenceID: number, source: Paragraph['source'], to?: Paragraph['to']) {
+    toPara?: Paragraph['key'][];
+    toStory?: Paragraph['key'][];
+    constructor(
+      key: string,
+      startSentenceID: number,
+      endSentenceID: number,
+      endToStory: string | void,
+      source: Paragraph['source'],
+      toPara?: Paragraph['toPara'],
+      toStory?: Paragraph['toStory']
+    ) {
       this.key = key;
       this.start = startSentenceID;
       this.end = endSentenceID;
+      endToStory !== void 0 && (this.endToStory = endToStory);
       this.source = source;
-      to !== void 0 && (this.to = to);
+      toPara !== void 0 && (this.toPara = toPara);
+      toStory !== void 0 && (this.toStory = toStory);
     }
   }
   export function getFnsNeedFilekeys(staticSentence: StaticSentence): string[] {
@@ -171,16 +184,16 @@ export namespace VN {
     ID: number;
     key: string;
     title: string;
-    end: readonly string[];
+    end: string[];
     tips: readonly string[];
-    ParagraphRecord: KKVRecord<Paragraph>;
+    paragraphRecord: KKVRecord<Paragraph>;
     to?: string;
     loadList: string[];
     static async getRecordFromDB(ID: number) {
       const re = dbh.get('Story', ID).then((e: StaticStory) => {
         if (e !== void 0) {
           Object.setPrototypeOf(e, StaticStory.prototype);
-          Object.setPrototypeOf(e.ParagraphRecord, KKVRecord.prototype);
+          Object.setPrototypeOf(e.paragraphRecord, KKVRecord.prototype);
           return e;
         } else throw new Error(`请求了不存在的staticStoryID: 0x${ID.toString(16).padStart(4, '0')} from 0x${ID.toString(16).padStart(8, '0')}`);
       });
@@ -189,20 +202,22 @@ export namespace VN {
     constructor(ID: number, key: string, VNLines: readonly string[]) {
       this.ID = ID;
       this.key = key;
-      const [{ title, end, tips, to }, lastPropsLineIndex] = readProps(VNLines, 'STORY', true);
+      const [{ title, tips, to }, lastPropsLineIndex] = readProps(VNLines, 'STORY', true);
       this.title = title;
-      this.end = end;
+      this.end = [];
       this.tips = tips;
       to !== void 0 && (this.to = to);
       const loadSet = new Set<string>([]);
-      const paragraphPropsCache: Record<string, [number, number]> = {};
+      const paragraphPropsCache: Record<string, [start: number, end: number, endToStory: string | void]> = {};
       const sentenceCache: StaticSentence[] = [];
       let nextSentenceID = (this.ID << 16) + 0x0000;
       const maxSentenceID = (this.ID << 16) + MAX_SENTENCES_NUM_OF_A_STORY;
       const paragraphConnect = {
         source: {} as Record<string, string[]>,
-        to: {} as Record<string, string[]>,
+        toPara: {} as Record<string, string[]>,
+        toStory: {} as Record<string, string[]>,
         from: {} as Record<string, string>,
+        endToStory: void 0 as string | void,
       };
       let rootParagraphKey: string;
       for (let i = lastPropsLineIndex; i < VNLines.length; ++i) {
@@ -210,8 +225,9 @@ export namespace VN {
         if (currentLine[0] !== '\x02') {
           throw new Error(`StaticStory构造: 未读到段落起始标识于行 ${i}。读取到:\n\t${currentLine}`);
         }
-        const paragraphKey = currentLine.slice(1),
+        const [paragraphKey, endToStory] = currentLine.slice(1).split('\x1b'),
           paragraphStartID = nextSentenceID;
+        const isEndParagraph = endToStory !== void 0;
         rootParagraphKey ??= paragraphKey;
         currentLine = VNLines[++i];
         for (; currentLine[0] === '@'; currentLine = VNLines[++i]) {
@@ -227,17 +243,28 @@ export namespace VN {
         else if (paragraphKey !== currentLine.slice(1))
           throw new Error(`StaticStory构造: 读到段落结束标识不匹配于行 ${i}。读取到:\n\t${currentLine.slice(1)},\n应为:\n\t${paragraphKey}`);
 
-        // todo: choice改造后需要调整
+        // todo: choice改造后需要再调整
         const choiceFns = sentenceCache[sentenceCache.length - 1].fns.find(([fnName]) => fnName === 'choice');
-        if (!this.end.includes(paragraphKey)) {
+        if (!isEndParagraph) {
           if (!choiceFns) throw new Error(`StaticStory构造: 异常的非end段落${key} - ${paragraphKey}: 最后一句不是选项\n${VNLines[i - 1]}`);
-          choiceFns[1].forEach(([text, nextParagraph, to]) => {
-            (paragraphConnect.to[paragraphKey] ??= []).push(nextParagraph as string);
-            if (paragraphConnect.from[nextParagraph as string]) throw new Error(`StaticStory构造: ${key} - ${nextParagraph}存在多个from`);
-            paragraphConnect.from[nextParagraph as string] = paragraphKey;
+          choiceFns[1].forEach(([type, nextAny, text]) => {
+            if (type === 'para') {
+              const nextParagraph = nextAny;
+              (paragraphConnect.toPara[paragraphKey] ??= []).push(nextParagraph as string);
+              if (paragraphConnect.from[nextParagraph as string]) throw new Error(`StaticStory构造: ${key} - ${nextParagraph}存在多个from`);
+              paragraphConnect.from[nextParagraph as string] = paragraphKey;
+            } else if (type === 'story') {
+              const nextStroy = nextAny;
+              (paragraphConnect.toStory[paragraphKey] ??= []).push(nextStroy as string);
+              // ...
+            }
           });
         } else if (choiceFns) throw new Error(`StaticStory构造: 异常的end段落${key} - ${paragraphKey}: 存在choice`);
-        paragraphPropsCache[paragraphKey] = [paragraphStartID, paragraphEndID];
+        else {
+          this.end.push(paragraphKey);
+          if (endToStory) (paragraphConnect.toStory[paragraphKey] ??= []).push(endToStory);
+        }
+        paragraphPropsCache[paragraphKey] = [paragraphStartID, paragraphEndID, endToStory];
       }
       if (rootParagraphKey! === void 0) throw new Error(`StaticStory构造: 故事 ${key} 无段落`);
       function writeSource(rootKey: string, sourceValue: string[]) {
@@ -245,22 +272,24 @@ export namespace VN {
           throw new Error(`StaticStory构造: ${key} - ${rootKey} 段落不存在，且存在choice尝试跳转到 ${rootKey}`);
         if (sourceValue.includes(rootKey)) throw new Error(`StaticStory构造: 故事 ${key} 存在段落环:\n\t${sourceValue.join('-')}-${rootKey}`);
         paragraphConnect.source[rootKey] = sourceValue;
-        paragraphConnect.to[rootKey]?.forEach((key) => {
+        paragraphConnect.toPara[rootKey]?.forEach((key) => {
           writeSource(key, [...sourceValue, rootKey]);
         });
       }
       writeSource(rootParagraphKey, []);
-      const paragraphs = Object.entries(paragraphPropsCache).map(([paragraphKey, [paragraphStartID, paragraphEndID]]) => {
+      const paragraphs = Object.entries(paragraphPropsCache).map(([paragraphKey, [paragraphStartID, paragraphEndID, endToStory]]) => {
         if (paragraphConnect.source[paragraphKey] === void 0) console.warn(`存在不可到达的段落: ${key} - ${paragraphKey}`);
         return new Paragraph(
           paragraphKey,
           paragraphStartID,
           paragraphEndID,
+          endToStory,
           paragraphConnect.source[paragraphKey] ?? [],
-          paragraphConnect.to[paragraphKey]
+          paragraphConnect.toPara[paragraphKey],
+          paragraphConnect.toStory[paragraphKey]
         );
       });
-      this.ParagraphRecord = new KKVRecord(paragraphs);
+      this.paragraphRecord = new KKVRecord(paragraphs);
       this.loadList = Array.from(loadSet);
       // console.log(sentenceCache)
       dbh.putM('Sentence', sentenceCache);
@@ -277,6 +306,8 @@ export namespace VN {
     check: GlobalSave.CheckerConstructorProps;
     Story_KeyIDEnum: KeyIDEnum;
     constructor(ID: number, key: string, [BookVN, StoryVNMap]: [string, { [StoryKey: string]: string }]) {
+      // 构造时更新Book_KeyIDEnum
+      if (Book_KeyIDEnum[key] || Book_KeyIDEnum[ID]) throw new Error(`new StaticBook()警告: 存在重复BookID${ID}或Key${key}`);
       Book_KeyIDEnum[key] = this.ID = ID;
       Book_KeyIDEnum[ID] = this.key = key;
       const VNLines = BookVN.split('\n')
@@ -293,11 +324,12 @@ export namespace VN {
       this.Story_KeyIDEnum = {};
 
       const storyCache: StaticStory[] = [];
-      let nextStoryID = (this.ID << 8) + 0x01; // 给start空出了00
+      let nextStoryID = (this.ID << 8) + 0x01; // 给start（起始故事）空出了00
       const maxStoryID = (this.ID << 8) + MAX_STORYS_NUM_OF_A_BOOK;
       for (const key in StoryVNMap) {
         if (nextStoryID > maxStoryID) throw new Error(`StaticBook构造: 故事过多。`);
         const newStoryID = key === this.start ? (this.ID << 8) + 0x00 : nextStoryID++;
+        // 规定起始故事必须为00
         this.Story_KeyIDEnum[newStoryID] = key;
         this.Story_KeyIDEnum[key] = newStoryID;
         storyCache.push(

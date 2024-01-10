@@ -1,0 +1,70 @@
+#MainP {
+  .choice {
+    position: absolute;
+    width: 10.2rem;
+    left: 0;
+    right: 0;
+    top: 0.5rem;
+    bottom: 2rem;
+    margin: auto;
+    font-size: 0.45rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.5s, opacity 0.5s, width 0.2s;
+    // background-color: rgba(32, 32, 32, 0.2);
+    opacity: 1;
+    &::-webkit-scrollbar {
+      width: 0.04rem;
+      background-color: transparent;
+    }
+    &:hover::-webkit-scrollbar-thumb {
+      background-color: rgba(232, 232, 232, 0.1);
+      border: 0.01rem solid #ffffff11;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: rgba(232, 232, 232, 0);
+      border: 0.01rem solid #ffffff00;
+      border-radius: 0.05rem;
+    }
+    &.hide {
+      background-color: transparent;
+      opacity: 0;
+      width: 0;
+      pointer-events: none;
+    }
+
+    &:hover > .options-box > .option {
+      background-color: #ffffff22;
+    }
+    & > .options-box {
+      width: 9.8rem;
+      position: absolute;
+      display: flex;
+      flex-direction: column;
+      flex-wrap: nowrap;
+      justify-content: center;
+      align-items: center;
+      & > .option {
+        background-color: #ffffff11;
+        margin: 0.1rem 0;
+        border: 0.01rem solid #678abc99;
+        border-radius: 0.2rem 0 0.2rem 0;
+        height: 0.9rem;
+        box-sizing: border-box;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        transition: background-color 0.2s;
+        &:hover {
+          background-color: #ffffff33;
+          cursor: pointer;
+        }
+      }
+    }
+  }
+}

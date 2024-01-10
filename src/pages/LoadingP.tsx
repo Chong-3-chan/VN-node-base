@@ -52,7 +52,7 @@ function useLoadingResult(loadList: string[]): LoadingResult {
       [LoadingPhase.loading]: [loaded],
       [LoadingPhase.done]: [],
     },
-  ] = useDTJ<LoadingPhase>([LoadingPhase.waiting, 1], [LoadingPhase.loading, 1], [LoadingPhase.done, 0]);
+  ] = useDTJ<LoadingPhase>({ [LoadingPhase.waiting]: 1, [LoadingPhase.loading]: 1, [LoadingPhase.done]: 0 });
   const [progress, setProgress]: [LoadingProgress, React.Dispatch<React.SetStateAction<LoadingProgress>>] = useState(defaultLoadingProgess);
   useEffect(() => {
     const todoMap: Record<LoadingPhase, (() => void) | null> = {
@@ -180,13 +180,13 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
       [LoadingPPhase.out]: [delay_out],
       [LoadingPhase.done]: [],
     },
-  ] = useDTJ<LoadingPPhase>(
-    [LoadingPPhase.init, 1],
-    [LoadingPPhase.in, 1],
-    [LoadingPPhase.loading, 3],
-    [LoadingPPhase.out, 1],
-    [LoadingPPhase.done, 0]
-  );
+  ] = useDTJ<LoadingPPhase>({
+    [LoadingPPhase.init]: 1,
+    [LoadingPPhase.in]: 1,
+    [LoadingPPhase.loading]: 3,
+    [LoadingPPhase.out]: 1,
+    [LoadingPPhase.done]: 0,
+  });
   // console.log(
   //   JSON.stringify({
   //     [LoadingPPhase.init]: [delay_init()],
