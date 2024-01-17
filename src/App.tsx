@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, 
 import logo from './logo.svg';
 import Page, { Pages } from './pages';
 import './App.less';
-import { useDTJ } from './handle/hooks';
+import { useDTJ } from './public/handle/hooks';
 import { tipsGroupRecord } from './data/data';
 import { LoadingPProps } from './pages/LoadingP';
-import { ActivePageEnum, usePageState } from './pageState';
+import { ActivePageEnum, FXPhase, usePageState } from './pageState';
 import { PageStateProvider } from './pageState';
 // import { dbh } from './handle/IndexedDB';
 
@@ -29,6 +29,44 @@ function Test() {
           {'0x' + e}
         </button>
       ))}
+      {
+        <button
+          onClick={() =>
+            pageAction.callDialog({
+              text: '提示内容提示内容提示内容提示内容提示内容提示内容\n提示内容',
+              title: '提示',
+              onClose: () => alert('close'),
+              optionsCallback: {
+                选项1: () => {
+                  alert(1);
+                  return !!1;
+                },
+                选项2: () => {
+                  alert(2);
+                  return !!0;
+                },
+              },
+            })
+          }
+        >
+          dialog测试
+        </button>
+      }
+      {
+        <button
+          onClick={() => {
+            const { out, assignOnStepCase } = pageAction.callFX['transition-black-full'](1000, 500);
+            assignOnStepCase({
+              [FXPhase.keep]: () =>
+                setTimeout(() => {
+                  out();
+                }, 0),
+            });
+          }}
+        >
+          FX测试
+        </button>
+      }
     </div>
   );
 }
@@ -36,49 +74,12 @@ function Test() {
 function App() {
   const { pageState, pageAction } = usePageState();
   return (
-    <PageStateProvider>
-      <div className="App">
-        {/* <header className="App-header">
-      <img src={logo} className="App-logo" alt="logo" />
-      <p>
-        Edit <code>src/App.tsx</code> and save to reload.
-      </p>
-      <a
-        className="App-link"
-        href="https://reactjs.org"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Learn React
-      </a>
-    </header> */}
-        {/* {phase}
-    {[a1, b1, b2, c1].map((e,i) => <button key={i} onClick={(()=>e(true))} disabled={e()}>{e().toString()}</button>)} */}
-        {/* {<Page.HomeP />} */}
-        {/* {flag && (
-          <Page.LoadingP
-            title={'哈哈'}
-            loadList={[
-              '_P_INDOOR_5',
-              '_P_INDOOR_4',
-              '_P_INDOOR_4copy',
-              '_C_12_01',
-              '_BGM_01',
-              '_H_BG_0',
-              '_H_BG_1',
-              '_BGM_02',
-              'CG_01',
-              'CG_02',
-              '_H_LOGO',
-              '_H_TITLE',
-            ]}
-            tips={Object.values(tipsGroupRecord)}
-          />
-        )} */}
+    <div className="App">
+      <PageStateProvider>
         <Pages />
         <Test />
-      </div>
-    </PageStateProvider>
+      </PageStateProvider>
+    </div>
   );
 }
 export default App;

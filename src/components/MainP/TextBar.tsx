@@ -1,8 +1,11 @@
 import { FC, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { MainPhase } from '../../public/MainP';
-import { charaRecord } from '../../data/data';
+import { charaRecord, fileCache } from '../../data/data';
 import { StrokedText } from '../public/StrokedText';
 import './TextBar.less';
+import { CharaInfo } from '../../class/Records';
+import { getSrc } from '../../data/getData';
+import { classNames } from '../../public/handle';
 
 type FlowingTextProps = {
   text: string;
@@ -16,16 +19,18 @@ export const FlowingText: FC<FlowingTextProps> = ({ text, flags: [init, done], p
     updateInit = () => init(true);
   const [displayLength, setDisplayLength] = useState(0);
   const intervalRef = useRef<NodeJS.Timer | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!initFlag) {
       setDisplayLength(0);
       updateInit();
     }
   });
   useEffect(() => {
-    if (initFlag && phase === MainPhase.text)
+    if (initFlag && phase === MainPhase.text) {
+      clearInterval(intervalRef.current!);
       intervalRef.current = setInterval(() => setDisplayLength((e) => e + 1), text.length > 0 ? Math.min(50, 300 / text.length) : 50);
-    // from options
+    }
+    // from options 设置延迟等
   }, [phase, initFlag]);
   useEffect(() => {
     if (phase === MainPhase.text && displayLength >= text.length && !doneFlag) {
@@ -35,6 +40,7 @@ export const FlowingText: FC<FlowingTextProps> = ({ text, flags: [init, done], p
   }, [doneFlag, displayLength]);
   useEffect(() => {
     if (doneFlag && displayLength < text.length) {
+      clearInterval(intervalRef.current!);
       setDisplayLength(text.length);
     }
   }, [doneFlag]);
@@ -50,16 +56,29 @@ type TextBarProps = { charaKey: string; FlowingTextProps: FlowingTextProps; hand
 export const TextBar: FC<TextBarProps> = ({ charaKey, FlowingTextProps, handleGoNextSentence }) => {
   const phase = FlowingTextProps.phase;
   const FlowingTextDoneFlag = FlowingTextProps.flags[1]();
+  const avatarFilekey = charaKey ? CharaInfo.getAvatarFilekey(charaKey) : null;
+  const avatarSrc = useRef<string | undefined>(void 0);
+  const [avatarChanged, setAvatarChanged] = useState(true);
+  useEffect(() => {
+    const newValue = avatarFilekey ? getSrc(avatarFilekey) : void 0;
+    newValue !== avatarSrc.current && setAvatarChanged(true);
+    avatarSrc.current = newValue;
+  }, [charaKey]);
+  useEffect(() => {
+    if (phase === MainPhase.text) avatarSrc.current && avatarChanged && setAvatarChanged(false);
+  }, [phase]);
   return (
     <>
       <div className="text-bar">
         <div className="header">
           <div className="chara-name">
-            <StrokedText text={phase === MainPhase.text || FlowingTextDoneFlag ? charaRecord[charaKey]?.name ?? '鱼鱼' : '鱼鱼'}></StrokedText>
+            <StrokedText text={phase === MainPhase.text || FlowingTextDoneFlag ? charaRecord[charaKey]?.name ?? '' : ''}></StrokedText>
           </div>
         </div>
         <div className="body" onClick={handleGoNextSentence}>
-          <div className="chara-head"></div>
+          <div className={classNames('chara-avatar', avatarChanged ? 'grey' : void 0)}>
+            <img src={avatarSrc.current} />
+          </div>
           <FlowingText {...FlowingTextProps} />
         </div>
       </div>

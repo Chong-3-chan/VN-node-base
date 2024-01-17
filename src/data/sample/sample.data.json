@@ -13,6 +13,7 @@
     "_P_INDOOR_4copy": ["place_SAMPLE", "bg_3573.png"],
     "_C_12_01": ["chara_SAMPLE", "tati_120101.png"],
     "_C_12_02": ["chara_SAMPLE", "tati_120102.png"],
+    "_C_12_A": ["chara_SAMPLE", "head_1201.png"],
     "_BGM_01": ["BGM_SAMPLE", "bgm_0208_loop.ogg"],
     "_H_BG_0": ["home_SAMPLE", "bg_0.png"],
     "_H_BG_1": ["home_SAMPLE", "bg_1.png"],
@@ -29,7 +30,8 @@
       {
         "01": "_C_12_01",
         "02": "_C_12_02"
-      }
+      },
+      "_C_12_A"
     ]
   },
   "tipsGroup": {

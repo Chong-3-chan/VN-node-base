@@ -1,7 +1,7 @@
 import { useState, type FC, useEffect, useCallback, useRef, useMemo, useReducer } from 'react';
 import './LoadingP.less';
 import { fileRecord, homeResource, packageRecord, tipsGroupRecord } from '../data/data';
-import { useDTJ } from '../handle/hooks';
+import { useDTJ } from '../public/handle/hooks';
 import { Tips, TipsGroup } from '../class/Records';
 import { usePageState } from '../pageState';
 
@@ -68,7 +68,7 @@ function useLoadingResult(loadList: string[]): LoadingResult {
                   if (re === void 0) console.warn(`不在包内的文件key: ${fileKey}`);
                   return re;
                 })
-                .filter((e) => e)
+                .filter(Boolean)
             )
           );
           console.warn('need', loadListRef.current, needPackageKeys);

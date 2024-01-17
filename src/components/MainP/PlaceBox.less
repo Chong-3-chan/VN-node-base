@@ -8,19 +8,11 @@
     &.hide {
       opacity: 0;
     }
-    @keyframes in {
-      0% {
-        opacity: 0;
-      }
-      100% {
-        opacity: 1;
-      }
-    }
     &.in {
-      animation: in 0.5s ease-in-out both;
+      animation: in 0.5s ease-in-out forwards;
     }
     &.out {
-      animation: in 0.5s ease-in-out both reverse;
+      animation: out 0.5s ease-in-out forwards;
     }
     img {
       background-color: transparent;

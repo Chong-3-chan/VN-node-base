@@ -2,7 +2,7 @@
 import { FC, useState, useRef, useMemo, useEffect } from 'react';
 import { SentenceState } from '../../data/data';
 import { getSrc } from '../../data/getData';
-import { classNames } from '../../handle';
+import { classNames } from '../../public/handle';
 import { MainPhase } from '../../public/MainP';
 import './PlaceBox.less'
 export type PlaceBoxProps = {

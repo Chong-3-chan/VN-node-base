@@ -1,8 +1,8 @@
 import { VN } from '../class/Book';
 import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from '../class/Records';
 import { dataURL, resourceBasePath } from '../config';
-import { deepClone } from '../handle';
-import { dbh } from '../handle/IndexedDB';
+import { deepClone } from '../public/handle';
+import { dbh } from '../public/handle/IndexedDB';
 import * as Data from './data';
 import { Checker } from './globalSave';
 async function getDataObject() {
@@ -47,7 +47,7 @@ export async function getData() {
   {
     // chara
     const charaCache: CharaInfo[] = [];
-    Object.entries(chara).map(([charaKey, [name, pic]]: any) => charaCache.push(new CharaInfo(charaKey, name, pic)));
+    Object.entries(chara).map(([charaKey, [name, pic, avatar]]: any) => charaCache.push(new CharaInfo(charaKey, name, pic, avatar)));
     Data.KKVRecord.push(Data.charaRecord, charaCache);
   }
 
@@ -181,7 +181,7 @@ export namespace EXStaticSentence {
   };
   function writeState(base: Data.SentenceState, sentence: Data.EXStaticSentence) {
     if (sentence.state) return;
-    const { fns } = sentence;
+    const { fns, charaKey } = sentence;
     const charaMoveFns = fns.filter(([e]) => e === 'charaMove');
     const tempState: typeof base = { voice: null, choice: null, loadList: [] };
     fns.forEach(([fnName, props]) => {
@@ -211,7 +211,8 @@ export namespace EXStaticSentence {
     const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
     nextState.loadList.push(
       ...getFileKeysKeys.filter((key) => nextState[key]).map((key) => nextState[key] as string),
-      ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key))
+      ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key)),
+      ...([charaKey ? CharaInfo.getAvatarFilekey(charaKey) : ''].filter(Boolean) as string[])
     );
 
     sentence.state = deepClone(nextState);

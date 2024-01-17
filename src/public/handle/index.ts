@@ -1,5 +1,5 @@
 export function classNames(...list: (string | void)[]) {
-  return list.filter((e) => e).join(' ');
+  return list.filter(Boolean).join(' ');
 }
 
 function getDeepCloneMain() {

@@ -1,5 +1,5 @@
 import { FC } from 'react';
-import { classNames } from '../../handle';
+import { classNames } from '../../public/handle';
 import './StrokedText.less';
 type StrokedTextProps = {
   text: string;

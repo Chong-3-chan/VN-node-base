@@ -2,8 +2,8 @@
 import { FC, useEffect, useState, useRef, useMemo, useLayoutEffect, Fragment } from 'react';
 import { SentenceState } from '../../data/data';
 import { getSrc } from '../../data/getData';
-import { deepClone, classNames } from '../../handle';
-import { useDTJ } from '../../handle/hooks';
+import { deepClone, classNames } from '../../public/handle';
+import { useDTJ } from '../../public/handle/hooks';
 import { MainPhase } from '../../public/MainP';
 import './CharaBox.less';
 export type CharaBoxProps = {
@@ -112,7 +112,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
       updateInit();
     }
   });
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (initFlag && phase === MainPhase.chara) {
       reset();
       if (Object.keys(AnimationEndMemo.current.out).length === 0) outDone(true);
@@ -215,11 +215,13 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
       {Object.keys({ ...lastCharas, ...charas }).map((k) => {
         const last = lastCharasSrcRef.current[k],
           cover = coverSrc[k];
+        const lastChara = lastCharas?.[k],
+          chara = charas?.[k];
         const [moveClass, moveProps] = (() => {
-          if (charas && charas[k] && charaBoxPhase === CharaBoxPhase.move && AnimationEndMemo.current.move[k] !== void 0) {
+          if (chara && charaBoxPhase === CharaBoxPhase.move && AnimationEndMemo.current.move[k] !== void 0) {
             if (AnimationEndMemo.current.move[k][moveCount] !== void 0) {
-              if (charas[k]?.move?.[moveCount] === void 0) throw new Error(`获取moveClass失败`);
-              return [`move-${charas[k]!.move![moveCount][0]}`, charas[k]!.move![moveCount]];
+              if (chara?.move![moveCount] === void 0) throw new Error(`获取moveClass失败`);
+              return [`move-${chara.move[moveCount][0]}`, chara.move[moveCount]];
             }
           }
           return [];
@@ -242,7 +244,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
                   }
                 })(),
                 moveClass,
-                lastCharas?.[k]?.position
+                lastChara?.position
               )}
               onAnimationEnd={() => {
                 if (charaBoxPhase === CharaBoxPhase.out) handleAnimationEnd('out', k);
@@ -264,7 +266,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
                     ? 'in'
                     : 'hide'
                   : 'hide',
-                charas?.[k]?.position
+                chara?.position
               )}
               onAnimationEnd={() => {
                 if (charaBoxPhase === CharaBoxPhase.in) handleAnimationEnd('in', k);

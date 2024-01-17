@@ -1,0 +1,116 @@
+@img: '~@/images';
+
+.dialog-handle {
+  position: absolute;
+  z-index: 2000;
+  height: 100%;
+  width: 100%;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  background-color: rgba(32, 32, 32, 0.8);
+  backdrop-filter: blur(0.1rem);
+  transition: opacity 0.4s, height 0.2s;
+  opacity: 1;
+  &.hide {
+    transition: opacity 0.4s, height 0s 0.5s;
+    opacity: 0;
+    height: 0%;
+  }
+  & > .dialog {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: filter 0.5s;
+    &:not(:last-child) {
+      filter: blur(0.02rem) brightness(0.5) opacity(0.2);
+    }
+    font-family: 'Microsoft YaHei';
+    min-height: 3rem;
+    max-width: 6rem;
+    // border: 0.01rem solid rgba(232, 232, 232, 0.4);
+    border-radius: 0.1rem;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    & > .header {
+      position: relative;
+      height: 0.5rem;
+      //   border-bottom: 0.01rem solid rgba(232, 232, 232, 0.4);
+      & > .title {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        text-align: center;
+        font-size: 100%;
+        display: flex;
+        justify-content: center;
+      }
+      //   & > .close {
+      //     position: absolute;
+      //     top: 0;
+      //     bottom: 0;
+      //     right: 0.1rem;
+      //     margin: auto 0;
+      //     mask-image: url('@{img}/close.svg');
+      //     mask-size: auto 125%;
+      //     mask-position: center;
+      //     background-color: rgba(232, 232, 232, 0.4);
+      //     height: 0.3rem;
+      //     width: 0.3rem;
+      //     border-radius: 0.1rem;
+      //     cursor: pointer;
+      //   }
+    }
+    & > .body {
+      flex-grow: 1;
+      font-size: 80%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      & > .text {
+        padding: 0.15rem 0.5rem;
+        text-align: center;
+      }
+    }
+    & > .footer {
+      //   border: 0.01rem dashed salmon;
+      height: 1rem;
+      & > .options {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        justify-content: space-evenly;
+        flex-flow: row wrap;
+        align-content: center;
+        font-size: 80%;
+        & > .option-item {
+          border: 0.01rem solid rgba(232, 232, 232, 0.4);
+          flex-grow: 1;
+          max-width: 25%;
+          font-size: 80%;
+          //   line-height: 0.6rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          height: 0.6rem;
+          background-color: transparent;
+          transition: background-color 0.2s;
+          &:hover{
+            background-color: #99994444;
+          }
+          &:first-child:hover {
+            background-color: #55aa3344;
+          }
+          &:last-child:hover {
+            background-color: #aa335544;
+          }
+
+        }
+      }
+    }
+  }
+}

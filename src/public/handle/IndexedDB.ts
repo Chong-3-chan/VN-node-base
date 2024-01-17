@@ -1,4 +1,4 @@
-import { KKVRecord } from '../data/data';
+import { KKVRecord } from '../../data/data';
 
 class DBHandle_base {
   DB?: IDBDatabase;

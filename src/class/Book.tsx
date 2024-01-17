@@ -1,7 +1,7 @@
 /* eslint-disable complexity */
 import { KKVRecord, charaRecord, Book_KeyIDEnum, sentenceCache } from '../data/data';
 import * as GlobalSave from '../data/globalSave';
-import { dbh } from '../handle/IndexedDB';
+import { dbh } from '../public/handle/IndexedDB';
 import { CharaInfo } from './Records';
 const MAX_BOOKS_NUM = 0xff;
 const MAX_STORYS_NUM_OF_A_BOOK = 0xff;

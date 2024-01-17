@@ -1,16 +1,17 @@
 import { FC, useState } from 'react';
 import { sentenceCache } from '../../data/data';
-import { classNames } from '../../handle';
+import { classNames } from '../../public/handle';
 import { StrokedText } from '../public/StrokedText';
 import { usePageState } from '../../pageState';
 import './ControlButtonsBarBox.less';
+import { MainPMode } from '../../pages/MainP';
 
 type HistoryViewProps = {
-  autoPlay: boolean;
-  setAutoPlay: React.Dispatch<React.SetStateAction<HistoryViewProps['autoPlay']>>;
+  mode: MainPMode;
+  setMode: React.Dispatch<React.SetStateAction<HistoryViewProps['mode']>>;
   setHistroyView: React.Dispatch<React.SetStateAction<boolean>>;
 };
-export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setHistroyView, autoPlay, setAutoPlay }) => {
+export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setHistroyView, mode, setMode }) => {
   const [controlBarDisplay, setControlBarDisplay] = useState(false);
   const [buttonsBarTransforming, setButtonsBarTransforming] = useState(false);
   return (
@@ -25,17 +26,12 @@ export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setHistroyView, aut
       >
         {(
           [
-            ['按钮'],
-            ['按钮'],
-            ['按钮'],
-            ['按钮'],
-            [
-              '历史',
-              () => {
-                setHistroyView(true);
-              },
-            ],
-            ['自动', () => setAutoPlay(!autoPlay), [autoPlay ? 'active' : void 0]],
+            ['保存(施工)'],
+            ['读取(施工)'],
+            ['设置(施工)'],
+            ['快进', () => setMode(mode === 'skip' ? 'default' : 'skip'), [mode === 'skip' ? 'active-skip' : void 0]],
+            ['历史', () => setHistroyView(true)],
+            ['自动', () => setMode(mode === 'auto' ? 'default' : 'auto'), [mode === 'auto' ? 'active-auto' : void 0]],
           ] as [text: string, fn?: () => void, classNamesList?: string[]][]
         ).map(([text, fn, classNamesList], i) => {
           return (
@@ -51,7 +47,7 @@ export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setHistroyView, aut
             'fn',
             controlBarDisplay ? 'close' : 'open',
             buttonsBarTransforming ? 'transforming' : void 0,
-            autoPlay ? 'active' : void 0
+            mode !== 'default' ? `active-${mode}` : void 0
           )}
           onClick={() => {
             setControlBarDisplay(!controlBarDisplay);

@@ -132,26 +132,10 @@
       left: 46%;
     }
     &.out {
-      @keyframes out {
-        0% {
-          opacity: 1;
-        }
-        100% {
-          opacity: 0;
-        }
-      }
-      animation: out 0.5s ease-in-out both;
+      animation: out 0.5s ease-in-out forwards;
     }
     &.in {
-      @keyframes in {
-        0% {
-          opacity: 0;
-        }
-        100% {
-          opacity: 1;
-        }
-      }
-      animation: in 0.5s ease-in-out both;
+      animation: in 0.5s ease-in-out forwards;
     }
     &.move-shake {
       @keyframes shake {

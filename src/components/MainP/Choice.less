@@ -13,7 +13,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.5s, opacity 0.5s, width 0.2s;
+    transition: background-color 0.5s 0.3s, opacity 0.5s 0.3s, width 0.2s 0.3s;
     // background-color: rgba(32, 32, 32, 0.2);
     opacity: 1;
     &::-webkit-scrollbar {
@@ -31,6 +31,7 @@
       border-radius: 0.05rem;
     }
     &.hide {
+      transition: background-color 0.3s, opacity 0.3s, width 0s 0.3s;
       background-color: transparent;
       opacity: 0;
       width: 0;

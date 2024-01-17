@@ -36,6 +36,7 @@
         width: 1.6rem;
         text-wrap: nowrap;
         border: 0.02rem dashed #8888f599;
+        box-sizing: border-box;
         display: flex;
         flex-direction: row;
         justify-content: center;
@@ -48,17 +49,35 @@
           background-color: #dddddd33;
           cursor: pointer;
         }
-        &.active span {
-          @keyframes active-animation {
-            0% {
-              filter: drop-shadow(0 0 0.02rem #ffe89988);
+        &.active-auto {
+          background-color: #ffc89933;
+          span {
+            @keyframes active-auto-animation {
+              0% {
+                filter: drop-shadow(0 0 0.03rem #ffc899aa);
+              }
+              100% {
+                filter: drop-shadow(0 0 0.02rem #ffc899aa);
+              }
             }
-            100% {
-              filter: drop-shadow(0 0 0.01rem #ffe89988);
-            }
+            animation: active-auto-animation 0.8s ease-in-out alternate-reverse infinite;
+            // filter: drop-shadow(0.1rem 0.1rem 0.1rem #fff)
           }
-          animation: active-animation 0.8s ease-in-out alternate-reverse infinite;
-          // filter: drop-shadow(0.1rem 0.1rem 0.1rem #fff)
+        }
+        &.active-skip {
+          background-color: #bb224833;
+          span {
+            @keyframes active-skip-animation {
+              0% {
+                filter: drop-shadow(0 0 0.02rem #bb224888);
+              }
+              100% {
+                filter: drop-shadow(0 0 0.01rem #bb224888);
+              }
+            }
+            animation: active-skip-animation 0.8s ease-in-out alternate-reverse infinite;
+            // filter: drop-shadow(0.1rem 0.1rem 0.1rem #fff)
+          }
         }
       }
     }
@@ -91,8 +110,8 @@
           width: calc(0.618 * var(--text-bar-fn-button-width));
           height: calc(0.618 * var(--text-bar-fn-button-width));
         }
-        &.active {
-          @keyframes active-animation-force {
+        &.active-auto {
+          @keyframes active-auto-animation-force {
             0% {
               filter: drop-shadow(0 0 0.02rem #ffd888);
               transform: rotate(0turn);
@@ -106,9 +125,29 @@
               transform: rotate(0.125turn);
             }
           }
-          animation: active-animation-force 2s ease-in-out infinite;
+          animation: active-auto-animation-force 2s ease-in-out infinite;
           & .gear {
             background-color: #ffe899;
+          }
+        }
+        &.active-skip {
+          @keyframes active-auto-animation-force {
+            0% {
+              filter: drop-shadow(0 0 0.02rem #ff88a8);
+              transform: rotate(0turn);
+            }
+            75% {
+              filter: drop-shadow(0 0 0.01rem #ff88a8);
+              transform: rotate(0.25turn);
+            }
+            100% {
+              filter: drop-shadow(0 0 0.02rem #ff88a8);
+              transform: rotate(0.125turn);
+            }
+          }
+          animation: active-auto-animation-force 2s ease-in-out infinite;
+          & .gear {
+            background-color: #bb2248;
           }
         }
 
@@ -134,7 +173,7 @@
                 transform: rotate(0.25turn);
               }
             }
-            animation: open 0.3s ease-in-out both;
+            animation: open 0.3s ease-in-out forwards;
           }
         }
         &.close {
@@ -156,7 +195,7 @@
                 transform: rotate(0turn);
               }
             }
-            animation: close 0.3s ease-in-out both;
+            animation: close 0.3s ease-in-out forwards;
           }
         }
         &.transforming {

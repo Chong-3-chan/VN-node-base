@@ -3,7 +3,7 @@
     text-shadow: #8888f599;
     --header-height: var(--text-bar-header-height);
     --body-height: var(--text-bar-body-height);
-    --chara-head-width: 2.5rem;
+    --chara-avatar-width: 2.5rem;
     height: 3rem;
     position: absolute;
     bottom: 0;
@@ -33,16 +33,24 @@
         flex-direction: row;
         justify-content: flex-start;
         align-items: center;
-        margin-left: calc(var(--chara-head-width) + 0.2rem);
+        margin-left: calc(var(--chara-avatar-width) + 0.2rem);
         margin-top: 0.05rem;
       }
     }
     & > .body {
       display: flex;
-      & > .chara-head {
+      & > .chara-avatar {
         background-color: #8888f522;
         height: var(--body-height);
         width: var(--body-height);
+        filter: drop-shadow(0 0 0.02rem #888);
+        & > img {
+          filter: contrast(1);
+          transition: filter 0.2s;
+        }
+        &.grey > img {
+          filter: contrast(0);
+        }
       }
       & > .text {
         position: relative;

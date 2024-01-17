@@ -2,23 +2,27 @@ import { useState, type FC, useRef, useEffect, useCallback, useMemo, useLayoutEf
 import './MainP.less';
 import { usePageState } from '../pageState';
 import { EXStaticSentence, charaRecord, sentenceCache, staticStoryRecord } from '../data/data';
-import { useDTJ } from '../handle/hooks';
+import { useDTJ } from '../public/handle/hooks';
 import { MainPhase } from '../public/MainP';
 import { CGBox } from '../components/MainP/CGBox';
 import { CharaBox } from '../components/MainP/CharaBox';
 import { PlaceBox } from '../components/MainP/PlaceBox';
 import { TextBar } from '../components/MainP/TextBar';
 import { Choice } from '../components/MainP/Choice';
-import { classNames } from '../handle';
-import { StrokedText } from '../components/public/StrokedText';
 import { ControlButtonsBarBox } from '../components/MainP/ControlButtonsBarBox';
 import { HistoryView } from '../components/MainP/HistoryView';
 
+export type MainPMode = 'auto' | 'skip' | 'default';
 export const MainP: FC = (props) => {
   const { pageState, pageAction } = usePageState();
-  const [nextSentenceID, setNextSentenceID] = useState<number | void>(void 0);
-  const [autoPlay, setAutoPlay] = useState(false);
+  // const [nextSentenceID, setNextSentenceID] = useState<number | void>(void 0);
+  // const [autoPlay, setAutoPlay] = useState(false);
+  // const [skipMode, setSkipMode] = useState(false);
+  const [mode, setMode] = useState<MainPMode>('default');
+  const isSkipMode = useMemo(() => mode === 'skip', [mode]);
+  const isAutoMode = useMemo(() => mode === 'auto', [mode]);
   const [autoPlayTimeOut, setAutoPlayTimeOut] = useState<NodeJS.Timeout | null>(null);
+  const [skipTransfrom, setSkipTransfrom] = useState(false);
   const [histroyView, setHistroyView] = useState(false);
   const [
     phase,
@@ -43,10 +47,20 @@ export const MainP: FC = (props) => {
     currentSentence.current = sentenceCache.get(pageState.sentenceID!)!;
     console.log(currentSentence.current!.state, pageState.currentKeys, pageState.currentObjs.paragraph, pageState.sentenceID);
     reset();
-    console.warn('mainp reset');
   }, [pageState.sentenceID]);
   useEffect(() => {
-    if (autoPlay) {
+    // if (charaInit() && textInit()) handleSkipTransfrom();
+    // console.log(skipTransfrom, phase);
+    if (isSkipMode || skipTransfrom) {
+      if (phase === MainPhase.place) placeDone(true);
+      else if (phase === MainPhase.chara) charaDone(true);
+      else if (phase === MainPhase.CG) CGDone(true);
+      else if (phase === MainPhase.text) textDone(true);
+      else !isSkipMode && setSkipTransfrom(false);
+    }
+  }, [skipTransfrom, phase, isSkipMode]);
+  useEffect(() => {
+    if (isAutoMode) {
       if (phase === MainPhase.done) {
         setAutoPlayTimeOut(
           setTimeout(() => {
@@ -62,7 +76,7 @@ export const MainP: FC = (props) => {
         setAutoPlayTimeOut(null);
       }
     }
-  }, [autoPlay]);
+  }, [isAutoMode]);
   useEffect(() => {
     const todoMap: Record<MainPhase, () => void> = {
       [MainPhase.place]: function (): void {},
@@ -71,7 +85,12 @@ export const MainP: FC = (props) => {
       [MainPhase.text]: function (): void {},
       [MainPhase.choice]: function (): void {},
       [MainPhase.done]: function (): void {
-        if (autoPlay) {
+        // if (currentSentence.current!.state?.choice) {
+        //   setTimeout(() => {
+        //     handleGoNextSentence();
+        //   }, 300);
+        // }
+        if (isAutoMode) {
           setAutoPlayTimeOut(
             setTimeout(() => {
               handleGoNextSentence();
@@ -79,35 +98,70 @@ export const MainP: FC = (props) => {
             }, 2000)
             // from options
           );
+        } else if (isSkipMode) {
+          setTimeout(() => {
+            handleGoNextSentence();
+          }, 50);
         }
       },
     };
     todoMap[phase]();
-  }, [phase]);
+  }, [phase, isSkipMode]);
   const currentSentence = useRef<EXStaticSentence>(useMemo(() => sentenceCache.get(pageState.sentenceID!), [])!);
-  const handleGoNextSentence = useCallback(() => {
-    if (autoPlayTimeOut !== null) {
-      clearTimeout(autoPlayTimeOut);
-      setAutoPlayTimeOut(null);
-    }
+  const handleGoNextSentenceThrottle = useRef<{ on: boolean; allow: boolean }>({ on: false, allow: true });
+  const handleSkipTransfrom = useCallback(() => {
+    setSkipTransfrom(true);
+  }, []);
 
-    console.log(phase);
-    if (phase !== MainPhase.done) [[placeDone], [charaDone], [CGDone], [textDone]].flat(1).forEach((e) => !e() && e(true));
-    if (phase === MainPhase.done) {
-      if (nextSentenceID !== void 0) {
-        // history功能专用
-        pageAction.setSentenceID(nextSentenceID);
-        setNextSentenceID(void 0);
-      } else {
-        if (pageState.currentObjs.paragraph!.end === pageState.sentenceID) pageAction.jumpToParagraphEndToStory();
-        else pageAction.setSentenceID(pageState.sentenceID! + 1);
+  const handleGoNextSentence = useCallback(
+    (force?: boolean, nextSentenceID?: number) => {
+      if (handleGoNextSentenceThrottle.current.on) {
+        if (!handleGoNextSentenceThrottle.current.allow) return;
       }
-    }
-  }, [nextSentenceID, phase, autoPlayTimeOut]);
+      if (autoPlayTimeOut !== null) {
+        clearTimeout(autoPlayTimeOut);
+        setAutoPlayTimeOut(null);
+      }
+
+      console.warn(force, !force && phase !== MainPhase.done, phase);
+      if (!force && phase !== MainPhase.done) handleSkipTransfrom();
+      else {
+        if (nextSentenceID !== void 0) {
+          // choice功能专用
+          pageAction.setSentenceID(nextSentenceID);
+          // setNextSentenceID(void 0);
+        } else {
+          console.warn(pageState.currentObjs.paragraph, pageState.sentenceID);
+          if (pageState.currentObjs.paragraph!.end === pageState.sentenceID) pageAction.jumpToParagraphEndToStory();
+          else pageAction.setSentenceID(pageState.sentenceID! + 1);
+        }
+
+        if (handleGoNextSentenceThrottle.current.on) {
+          handleGoNextSentenceThrottle.current.allow = false;
+          setTimeout(() => {
+            handleGoNextSentenceThrottle.current.allow = true;
+          }, 300);
+        }
+        // 限制了阅读速度
+      }
+    },
+    [phase, autoPlayTimeOut]
+  );
 
   useEffect(() => {
     console.log(currentSentence.current);
   }, [currentSentence.current]);
+  console.log([
+    phase,
+    {
+      [MainPhase.place]: [placeDone],
+      [MainPhase.chara]: [charaInit, charaDone],
+      [MainPhase.CG]: [CGDone],
+      [MainPhase.text]: [textInit, textDone],
+      [MainPhase.choice]: [choiceDone],
+      [MainPhase.done]: [],
+    },
+  ]);
   return (
     <div id="MainP">
       <h1>MainP</h1>
@@ -117,17 +171,21 @@ export const MainP: FC = (props) => {
       <TextBar
         FlowingTextProps={{ text: currentSentence.current!.text, flags: [textInit, textDone], phase }}
         charaKey={currentSentence.current.charaKey}
-        handleGoNextSentence={handleGoNextSentence}
+        handleGoNextSentence={() => handleGoNextSentence()}
       />
-      <Choice choice={currentSentence.current!.state?.choice} flags={[choiceDone]} phase={phase}></Choice>
+      <Choice choice={currentSentence.current!.state?.choice} flags={[choiceDone]} phase={phase} handleGoNextSentence={handleGoNextSentence}></Choice>
       <ControlButtonsBarBox
         {...{
           setHistroyView,
-          autoPlay,
-          setAutoPlay,
+          mode,
+          setMode,
+          // autoPlay,
+          // setAutoPlay,
+          // skipMode,
+          // setSkipMode,
         }}
       />
-      <HistoryView {...{ histroyView, setHistroyView }} />
+      <HistoryView {...{ histroyView, setHistroyView, handleGoNextSentence, handleSkipTransfrom, setMode }} />
     </div>
   );
 };

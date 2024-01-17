@@ -1,0 +1,63 @@
+#FX {
+  position: absolute;
+  // width: 50%;
+  // height: 50%;
+  height: 100%;
+  width: 100%;
+  z-index: 100;
+  &.none {
+    background-color: transparent;
+    display: none;
+  }
+  // & > div {
+  //   height: 100%;
+  //   width: 100%;
+  // }
+  &.transition-black-full {
+    --duration-in: 1000ms;
+    --duration-out: 1000ms;
+    background-color: transparent;
+    @keyframes transition-black-full-in {
+      0% {
+        background-color: transparent;
+        backdrop-filter: blur(0rem);
+      }
+      100% {
+        background-color: black;
+        backdrop-filter: blur(1rem);
+      }
+    }
+    @keyframes transition-black-full-out {
+      0% {
+        background-color: black;
+        backdrop-filter: blur(1rem);
+      }
+      100% {
+        background-color: transparent;
+        backdrop-filter: blur(0rem);
+      }
+    }
+    &.in {
+      background-color: transparent;
+      backdrop-filter: blur(0rem);
+      animation-play-state: running;
+      animation: transition-black-full-in var(--duration-in) ease-in-out forwards;
+    }
+    &.keep {
+      background-color: black;
+      backdrop-filter: blur(1rem);
+      animation-play-state: paused;
+    }
+    &.out {
+      background-color: black;
+      backdrop-filter: blur(1rem);
+      animation-play-state: running;
+      animation: transition-black-full-out var(--duration-out) ease-in-out forwards;
+    }
+    &.done {
+      background-color: transparent;
+      backdrop-filter: blur(0rem);
+      display: none;
+    }
+  }
+}

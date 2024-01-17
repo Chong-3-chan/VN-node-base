@@ -1,4 +1,4 @@
-@img: './../../images';
+@img: '~@/images';
 #MainP {
   .history-view {
     position: absolute;
@@ -17,6 +17,7 @@
     backdrop-filter: blur(0.02rem);
     &.hide {
       background-color: transparent;
+      transition: background-color 0.3s, opacity 0.5s, width 0s 0.5s;
       opacity: 0;
       width: 0;
       pointer-events: none;

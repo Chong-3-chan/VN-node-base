@@ -1,6 +1,6 @@
 import { resourceBasePath } from '../config';
 import { fileRecord, packageRecord, charaRecord, KKVRecord, fileCache } from '../data/data';
-import { dbh } from '../handle/IndexedDB';
+import { dbh } from '../public/handle/IndexedDB';
 import { WorkerHandle, WorkerMessage, Worker_getZip } from '../worker/WorkerHandle';
 import * as GetZip from '../worker/getZip.export';
 
@@ -120,10 +120,10 @@ export class PackageInfo implements PackageInfoLike {
             fileNameSet: new Set(Object.values(this.fileKeyNameMap)),
           },
           (msg) => {
-            const onStepCase: Record<GetZip.Worker_getZipState, null | (() => void)> = {
-              ready: null,
-              downloading: null,
-              loading: null,
+            const onStepCase: Partial<Record<GetZip.Worker_getZipState, () => void>> = {
+              ready: void 0,
+              downloading: void 0,
+              loading: void 0,
               done: () => {
                 this.failedFileNameList = msg.failedFileNameList as string[];
                 if (this.failedFileNameList.length !== 0)
@@ -262,14 +262,20 @@ export class CharaInfo {
   key: string;
   name: string;
   pic: Record<string, string>;
+  avatar?: string;
   static getPicFilekey(key: string, style: string): string | null {
     if (charaRecord[key] === void 0) throw new Error(`CharaInfo.getPicFilekey(): 不存在的人物记录: ${key}`);
     return charaRecord[key].pic[style] ?? null;
   }
-  constructor(key: string, name: string, pic: Record<string, string>) {
+  static getAvatarFilekey(key: string): string | null {
+    if (charaRecord[key] === void 0) throw new Error(`CharaInfo.getAvatarFilekey(): 不存在的人物记录: ${key}`);
+    return charaRecord[key].avatar ?? null;
+  }
+  constructor(key: string, name: string, pic: Record<string, string>, avatar?: string) {
     this.key = key;
     this.name = name;
     this.pic = pic;
+    avatar !== void 0 && (this.avatar = avatar);
   }
 }
 /******************************* CharaInfo END ********************************/

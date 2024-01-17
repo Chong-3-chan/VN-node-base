@@ -11,12 +11,29 @@
   position: absolute;
   overflow: hidden;
   font-family: 思源宋体, serif, SimHei;
-  font-size: .32rem;
+  font-size: 0.32rem;
 }
 html {
   overflow: hidden;
 }
 
+@keyframes in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes out {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
 // .App-logo {
 //   height: 40vmin;
 //   pointer-events: none;

@@ -1,10 +1,25 @@
-import { FC, PropsWithChildren, createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
+import {
+  CSSProperties,
+  FC,
+  PropsWithChildren,
+  ReactNode,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+  useRef,
+  useState,
+} from 'react';
 import type { LoadingPProps } from './pages/LoadingP';
 import { Book_KeyIDEnum, KKVRecord, homeResource, sentenceCache, staticBookRecord, staticStoryRecord, tipsGroupRecord } from './data/data';
 import { VN } from './class/Book';
-import { dbh } from './handle/IndexedDB';
-import { FileInfo } from './class/Records';
 import { EXStaticSentence, updateFileCache } from './data/getData';
+import { DialogProps, Dialog, DialogPropsRuntime } from './components/public/Dialog';
+import { classNames } from './public/handle';
+import { useDTJ } from './public/handle/hooks';
+import './FX.less';
 
 export enum ActivePageEnum {
   HomeP = 'HomeP',
@@ -42,6 +57,8 @@ type PageAction = {
   setActivePage: (nextActivePage: ActivePageEnum, sentenceId?: number) => void;
   setSentenceID: (nextSentenceID: number) => Promise<void>;
   jumpToParagraphEndToStory: () => Promise<void>;
+  callDialog: (props: DialogProps) => void;
+  callFX: ReturnType<typeof useFXHandle>['call'];
 };
 function getHomePLoadList(): string[] {
   const BGM = homeResource.BGM;
@@ -84,11 +101,136 @@ const pageActionInit: Partial<PageAction> = {
   load: void 0,
   setActivePage: void 0,
   setSentenceID: void 0,
+  jumpToParagraphEndToStory: void 0,
+  callDialog: void 0,
 };
 const pageStateContext = createContext(pageStateInit);
 const pageActionContext = createContext(pageActionInit as PageAction);
 
+const useDialogHandle = function () {
+  const dialogs = useRef<Record<number, DialogPropsRuntime>>({});
+  const [, forceUpdate] = useReducer((e) => e + 1, 0);
+  const [count, updateCount] = useReducer((e) => e + 1, 0);
+  return {
+    add: (dialogProps: DialogProps) => {
+      dialogs.current[count] = {
+        ...dialogProps,
+        destory() {
+          delete dialogs.current[count];
+          forceUpdate();
+        },
+      };
+      updateCount();
+    },
+    handle: (
+      <div className={classNames('dialog-handle', Object.keys(dialogs.current).length ? void 0 : 'hide')}>
+        {Object.values(dialogs.current).map((e, i) => (
+          <Dialog {...e} key={i} />
+        ))}
+      </div>
+    ),
+  };
+};
+export enum FXPhase {
+  in = 'in',
+  keep = 'keep',
+  out = 'out',
+  done = 'done',
+}
+
+type FXName = 'transition-black-full';
+const useFXHandle = function (): {
+  call: {
+    'transition-black-full': (
+      durationIn?: number,
+      durationOut?: number
+    ) => {
+      skip: () => void;
+      out: () => void;
+      assignOnStepCase: (v: Partial<Record<FXPhase, () => void>>) => Partial<Record<FXPhase, () => void>>;
+    };
+  };
+  handle: ReactNode;
+} {
+  const [
+    phase,
+    {
+      [FXPhase.in]: [inDone],
+      [FXPhase.keep]: [keepDone],
+      [FXPhase.out]: [outDone],
+      [FXPhase.done]: [],
+    },
+    reset,
+  ] = useDTJ<FXPhase>({
+    [FXPhase.in]: 1,
+    [FXPhase.keep]: 1,
+    [FXPhase.out]: 1,
+    [FXPhase.done]: 0,
+  });
+  const [FXName, setFXName] = useState<FXName | void>(void 0);
+  const [FXStyle, setFXStyle] = useState<Record<string, string | number> | void>(void 0);
+  const [onStepCase, setOnStepCase] = useState<Partial<Record<FXPhase, () => void>> | void>();
+  useEffect(() => {
+    const todo = onStepCase?.[phase];
+    todo && todo();
+    if (phase === FXPhase.done) {
+      setFXName(void 0);
+      setFXStyle(void 0);
+      setOnStepCase(void 0);
+      reset();
+    }
+  }, [onStepCase, phase]);
+  return {
+    call: {
+      'transition-black-full': (durationIn?: number, durationOut?: number) => {
+        setFXName('transition-black-full');
+        const style: any = {};
+        durationIn !== void 0 && (style['--duration-in'] = `${durationIn}ms`);
+        durationOut !== void 0 && (style['--duration-out'] = `${durationOut}ms`);
+        setFXStyle(style);
+        const re: {
+          skip: () => void;
+          out: () => void;
+          assignOnStepCase: (v: Partial<Record<FXPhase, () => void>>) => Partial<Record<FXPhase, () => void>>;
+        } = {
+          skip: () => {
+            inDone(true);
+            keepDone(true);
+            outDone(true);
+          },
+          out: () => {
+            keepDone(true);
+          },
+          assignOnStepCase(v: Partial<Record<FXPhase, () => void>>) {
+            const newOnStepCase = Object.assign(onStepCase ?? {}, v);
+            setOnStepCase(newOnStepCase);
+            return newOnStepCase;
+          },
+        };
+        return re;
+      },
+    },
+    handle: (
+      // <div  className={FXName === void 0 ? 'none' : ''}>
+      //   {
+      <div
+        id="FX"
+        className={classNames(FXName ?? 'none', phase)}
+        // ref={FXElementRef}
+        style={FXStyle as CSSProperties}
+        onAnimationEnd={() => {
+          if (phase === 'in') inDone(true);
+          else if (phase === 'out') outDone(true);
+        }}
+      ></div>
+      // }
+      // </div>
+    ),
+  };
+};
+
 export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
+  // states
   const [activePage, activePageSetter] = useState<PageState['activePage']>(pageStateInit.activePage);
   const [LoadingPProps, LoadingPPropsSetter] = useState<PageState['LoadingPProps']>(pageStateInit.LoadingPProps);
   const [sentenceID, sentenceIDSetter] = useState<PageState['sentenceID']>(pageStateInit.sentenceID);
@@ -123,6 +265,8 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
     }
   }, [sentenceID]);
   const pageState: PageState = { activePage, LoadingPProps, sentenceID, currentKeys, currentObjs };
+
+  // actions
   const load = useCallback<PageAction['load']>(
     (args: LoadingPProps | null) => {
       console.log(args, LoadingPProps);
@@ -188,7 +332,7 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
           const loadList = Object.values(nextState)
             .map((e) => (typeof e !== 'object' || e === null ? e : Object.values(e).map((e) => e!.key)))
             .flat(1)
-            .filter((e) => e);
+            .filter(Boolean);
           await updateFileCache(loadList as string[]);
           sentenceIDSetter(nextSentenceID);
           return;
@@ -253,10 +397,18 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
     }
     return setSentenceID(nextStoryID << 16);
   }, [currentKeys, setSentenceID, setActivePage]);
-  const pageAction: PageAction = { setActivePage, load, setSentenceID, jumpToParagraphEndToStory };
+  const { add: callDialog, handle: DialogHandle } = useDialogHandle();
+  const { call: callFX, handle: FXhandle } = useFXHandle();
+  const pageAction: PageAction = { setActivePage, load, setSentenceID, jumpToParagraphEndToStory, callDialog, callFX };
+
   return (
     <pageStateContext.Provider value={pageState}>
-      <pageActionContext.Provider value={pageAction}>{children}</pageActionContext.Provider>
+      <pageActionContext.Provider value={pageAction}>
+        {children}
+        {DialogHandle}
+        {FXhandle}
+        {/* <SE /> */}
+      </pageActionContext.Provider>
     </pageStateContext.Provider>
   );
 };

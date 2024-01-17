@@ -1,8 +1,8 @@
 /* eslint-disable jsx-a11y/alt-text */
-import { FC, useState, useRef, useMemo, useEffect } from 'react';
+import { FC, useState, useRef, useMemo, useEffect, useLayoutEffect } from 'react';
 import { SentenceState } from '../../data/data';
 import { getSrc } from '../../data/getData';
-import { classNames } from '../../handle';
+import { classNames } from '../../public/handle';
 import { MainPhase } from '../../public/MainP';
 import './CGBox.less';
 export type CGBoxProps = {
