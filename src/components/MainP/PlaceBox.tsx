@@ -4,7 +4,7 @@ import { SentenceState } from '../../data/data';
 import { getSrc } from '../../data/getData';
 import { classNames } from '../../public/handle';
 import { MainPhase } from '../../public/MainP';
-import './PlaceBox.less'
+import './PlaceBox.less';
 export type PlaceBoxProps = {
   place?: SentenceState['place'];
   flags: ((value?: boolean) => boolean)[];
@@ -12,19 +12,20 @@ export type PlaceBoxProps = {
 };
 export const PlaceBox: FC<PlaceBoxProps> = ({ place, flags: [done], phase }) => {
   const doneFlag = done(),
-    updateDone = () => done(true);
+    updateDone = () => done(true),
+    acting = phase === MainPhase.act;
 
   const [lastPlace, setLastPlace] = useState<typeof place>();
   const lastPlaceSrcRef = useRef<string>();
   const coverSrc = useMemo(() => {
-    if (!doneFlag && place) return getSrc(place);
+    if (place) return getSrc(place);
     return void 0;
   }, [place]);
   useEffect(() => {
     if (place === lastPlace && !doneFlag) updateDone();
   }, [doneFlag, lastPlace]);
   useEffect(() => {
-    if (doneFlag && lastPlaceSrcRef.current !== coverSrc) {
+    if (doneFlag && lastPlace !== place && lastPlaceSrcRef.current !== coverSrc) {
       lastPlaceSrcRef.current = place !== void 0 ? coverSrc : void 0;
       setLastPlace(place);
     }
@@ -32,15 +33,11 @@ export const PlaceBox: FC<PlaceBoxProps> = ({ place, flags: [done], phase }) => 
 
   return (
     <>
-      <div
-        className={classNames('place-box', 'last', phase === MainPhase.place && coverSrc === void 0 ? 'out' : void 0)}
-        onAnimationEnd={updateDone}
-        key={lastPlace}
-      >
+      <div className={classNames('place-box', 'last', acting && coverSrc === void 0 ? 'out' : void 0)} onAnimationEnd={updateDone} key={lastPlace}>
         <img src={lastPlaceSrcRef.current}></img>
       </div>
       <div
-        className={classNames('place-box', 'hide', phase === MainPhase.place && coverSrc !== void 0 ? 'in' : void 0)}
+        className={classNames('place-box', 'hide', acting && coverSrc !== void 0 ? 'in' : void 0)}
         onAnimationEnd={updateDone}
         key={lastPlace !== place ? place : ''}
       >

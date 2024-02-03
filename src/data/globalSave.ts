@@ -14,7 +14,7 @@ interface InfoData_wrote extends InfoData {
   checkKeyMap: Record<string, boolean>;
 }
 const info: { state: InfoState; data: InfoData | InfoData_wrote } = {
-  state: 'done',
+  state: 'waiting',
   data: {
     readStory: ['书「一」/道可道'],
     endedStory: ['书「一」/道可道'],
@@ -23,9 +23,25 @@ const info: { state: InfoState; data: InfoData | InfoData_wrote } = {
     checkKeyMap: null,
   },
 };
+
+// 同步读取，存在localStorage里
+try {
+  const fromStorage = window.localStorage.getItem('VN-global-save');
+  if (fromStorage === null) throw new Error(`未读取到VN-global-save记录`);
+  const data = JSON.parse(fromStorage);
+  if (data)
+    Object.keys(data).forEach((e) => {
+      info.data[e as keyof typeof info.data] = data[e].data;
+    });
+  else throw new Error(`VN-global-save记录值异常`);
+} catch (error) {
+  console.warn(error);
+}
+info.state = 'done';
+
 // export get
 
-type StoryCheckerMode = '&' | '|' | '!';
+export type StoryCheckerMode = '&' | '|' | '!';
 type CheckerType = 'key' | '&' | '|' | '!';
 export interface Checker {
   type: CheckerType;
@@ -33,21 +49,23 @@ export interface Checker {
   ended?: { mode: StoryCheckerMode; some: readonly string[] | null; all: readonly string[] | null };
   checkKeyName?: string;
   check(): boolean;
+  propsCheck(): boolean;
 }
 interface Checher_key extends Checker {
   type: 'key';
   checkKeyName: string;
 }
 interface Checher_story extends Checker {
-  type: '&' | '|' | '!';
+  type: StoryCheckerMode;
   read: { mode: StoryCheckerMode; some: readonly string[] | null; all: readonly string[] | null };
   ended: { mode: StoryCheckerMode; some: readonly string[] | null; all: readonly string[] | null };
 }
-export type CheckerConstructorProps = [
-  StoryCheckerMode,
-  [] | [StoryCheckerMode, readonly string[], readonly string[]],
-  [] | [StoryCheckerMode, readonly string[], readonly string[]]
-];
+type CheckerConstructorPropsHandleType<T extends StoryCheckerMode> = {
+  '&': [StoryCheckerMode, readonly string[], readonly string[]];
+  '|': [StoryCheckerMode, readonly string[], readonly string[]];
+  '!': [];
+}[T];
+export type CheckerConstructorProps<T extends StoryCheckerMode> = [T, CheckerConstructorPropsHandleType<T>, CheckerConstructorPropsHandleType<T>];
 export class Checker {
   type: CheckerType;
   read?: { mode: StoryCheckerMode; some: readonly string[] | null; all: readonly string[] | null };
@@ -102,15 +120,32 @@ export class Checker {
     };
     return checkerTypeCase[this.type]();
   }
-  constructor(keyName: string);
-  constructor(readAndEndedConfig: CheckerConstructorProps);
-  constructor(args_0: any) {
+  static propsCheck(args_0: any) {
     if (typeof args_0 === 'string') {
-      const [keyName] = [args_0];
+      return true;
+    } else if (Array.isArray(args_0) && args_0.length === 3 && ['&', '|', '!'].includes(args_0[0])) {
+      if (
+        [args_0[1], args_0[2]].every(
+          (e) =>
+            e.length === 0 ||
+            (e.length === 3 &&
+              ['&', '|', '!'].includes(e[0]) &&
+              Array.isArray(e[1]) &&
+              [e[1], e[2]].every((e: any[]) => e.every((ee) => typeof ee === 'string')))
+        )
+      )
+        return true;
+    } else return false;
+  }
+  constructor(keyName: string);
+  constructor(readAndEndedConfig: CheckerConstructorProps<StoryCheckerMode>);
+  constructor(args_0: string | CheckerConstructorProps<StoryCheckerMode>) {
+    if (typeof args_0 === 'string') {
+      const keyName = args_0;
       this.type = 'key';
       this.checkKeyName = keyName;
-    } else if (Array.isArray(args_0) && args_0.length === 3) {
-      const [readAndEndedConfig] = [args_0];
+    } else if (Array.isArray(args_0) && args_0.length === 3 && ['&', '|', '!'].includes(args_0[0])) {
+      const readAndEndedConfig = args_0;
       const [type, readConfig, endedConfig] = readAndEndedConfig;
       this.type = type;
       this.read =

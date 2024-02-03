@@ -9,7 +9,7 @@ type HistoryViewProps = {
   histroyView: boolean;
   setHistroyView: React.Dispatch<React.SetStateAction<HistoryViewProps['histroyView']>>;
   // phase: MainPhase;
-  handleGoNextSentence: (force?: boolean, nextSentenceID?: number) => void;
+  handleGoNextSentence: (nextSentenceID?: number, force?: boolean) => void;
   handleSkipTransfrom: () => void;
   setMode: React.Dispatch<React.SetStateAction<MainPMode>>;
 };
@@ -39,13 +39,6 @@ export const HistoryView: FC<HistoryViewProps> = ({ histroyView, setHistroyView,
       setDisplay(true);
     }
   }, [histroyView]);
-  // useEffect(() => {
-  //   if (jumpFXFns.current) {
-  //     jumpFXFns.current.out();
-  //     handleGoNextSentence();
-  //     jumpFXFns.current = void 0;
-  //   }
-  // }, [phase]);
   const closeHandle = () => {
     setDisplay(false);
     setHistroyView(false);
@@ -75,14 +68,13 @@ export const HistoryView: FC<HistoryViewProps> = ({ histroyView, setHistroyView,
                               fx.assignOnStepCase({
                                 [FXPhase.keep]: () => {
                                   closeHandle();
-                                  handleGoNextSentence(true, nextSentenceID);
+                                  handleGoNextSentence(nextSentenceID, true);
                                   setTimeout(() => {
                                     handleSkipTransfrom();
                                     fx.out();
                                   }, 100);
                                 },
                               });
-                              jumpFXFns.current = fx;
                               return true;
                             },
                             取消: () => true,
@@ -91,7 +83,7 @@ export const HistoryView: FC<HistoryViewProps> = ({ histroyView, setHistroyView,
                       }}
                     ></div>
                   )}
-                  {e.state?.voice && <div className={classNames('btn', 'voice')}></div>}
+                  {e.lastState?.voice && <div className={classNames('btn', 'voice')}></div>}
                 </div>
                 <div className="chara-name">
                   <StrokedText text={charaRecord[e.charaKey]?.name ?? ''}></StrokedText>

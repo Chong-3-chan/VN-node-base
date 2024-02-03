@@ -141,11 +141,11 @@ export function getSrc(fileKey: string) {
   return record.code;
 }
 export namespace EXStaticSentence {
-  const uniqueFns = ['Place', 'CG', 'CGOut', 'BGM', 'voice', 'choice'];
-  const lazyFns = ['Place', 'CG', 'CGOut', 'BGM'];
-  const map: Record<string, (state: Data.EXStaticSentence['state'], props: any) => void> = {
-    Place: function (state, props: any[]) {
-      if (state!.place !== void 0) throw new Error(`一个语句出现多个Place`);
+  const uniqueFns = ['place', 'CG', 'CGOut', 'BGM', 'voice', 'choice'];
+  const lazyFns = ['place', 'CG', 'CGOut', 'BGM'];
+  const map: Record<string, (state: Data.EXStaticSentence['lastState'], props: any) => void> = {
+    place: function (state, props: any[]) {
+      if (state!.place !== void 0) throw new Error(`一个语句出现多个place`);
       state!.place = props[0] ?? null;
     },
     chara: function (state, props: [string, string, string]) {
@@ -178,67 +178,138 @@ export namespace EXStaticSentence {
       if (state!.choice !== null) throw new Error(`一个语句出现多个choice`);
       state!.choice = props;
     },
+    // charaMove: function (state, [charaKey, moveType, ...props]) {
+    //   const c = state!.charas![charaKey as string];
+    //   if (!c) return;
+    //   (c.move ??= [])[c.move.length] = [moveType as string, ...props];
+    // },
   };
-  function writeState(base: Data.SentenceState, sentence: Data.EXStaticSentence) {
-    if (sentence.state) return;
+  // function writeState(base: Data.SentenceState, sentence: Data.EXStaticSentence) {
+  //   if (sentence.state) return;
+  //   // fns改造：在state传fns本身供box消费; 计算need-loadList
+  //   const { fns, charaKey } = sentence;
+  //   const charaMoveFns = fns.filter(([e]) => e === 'charaMove');
+  //   const tempState: typeof base = { voice: null, choice: null, loadList: [] };
+  //   fns.forEach(([fnName, props]) => {
+  //     const todo = map[fnName];
+  //     todo && todo(tempState, props);
+  //   });
+  //   const nextState: typeof base = base;
+  //   Object.assign(nextState, tempState);
+  //   nextState.charas = Object.assign({ ...base?.charas }, tempState.charas);
+  //   Object.entries(nextState.charas).forEach(([k, v]) => {
+  //     if (v === null) delete nextState.charas![k];
+  //   });
+  //   Object.entries(nextState).forEach(([k, v]) => {
+  //     if (v === null) delete nextState[k as keyof typeof nextState];
+  //   });
+  //   Object.values(nextState.charas).forEach((e) => {
+  //     if (e?.move) delete e.move;
+  //   });
+  //   charaMoveFns.forEach(([, [charaKey, moveType, ...props]], i) => {
+  //     const c = nextState.charas![charaKey as string];
+  //     if (!c) return;
+  //     (c.move ??= [])[i] = [moveType as string, ...props];
+  //   });
+  //   if (nextState.charas && Object.keys(nextState.charas).length === 0) delete nextState.charas;
+
+  //   // charas,
+  //   const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
+  //   nextState.loadList.push(
+  //     ...getFileKeysKeys.filter((key) => nextState[key]).map((key) => nextState[key] as string),
+  //     ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key)),
+  //     ...([CharaInfo.getAvatarFilekey(charaKey)].filter(Boolean) as string[])
+  //   );
+  //   sentence.state = deepClone(nextState);
+  //   // const newNeed = new Set(base);
+  // }
+  function writeState(base: Data.SentenceState = { loadList: [] }, sentence: Data.EXStaticSentence) {
+    if (sentence.lastState) return;
+    // fns改造：按照fnGroup生成中间状态; 计算need-loadList
     const { fns, charaKey } = sentence;
-    const charaMoveFns = fns.filter(([e]) => e === 'charaMove');
-    const tempState: typeof base = { voice: null, choice: null, loadList: [] };
-    fns.forEach(([fnName, props]) => {
-      const todo = map[fnName];
-      todo && todo(tempState, props);
-    });
-    const nextState: typeof base = base;
-    Object.assign(nextState, tempState);
-    nextState.charas = Object.assign({ ...base?.charas }, tempState.charas);
-    Object.entries(nextState.charas).forEach(([k, v]) => {
-      if (v === null) delete nextState.charas![k];
-    });
-    Object.entries(nextState).forEach(([k, v]) => {
-      if (v === null) delete nextState[k as keyof typeof nextState];
-    });
-    Object.values(nextState.charas).forEach((e) => {
-      if (e?.move) delete e.move;
-    });
-    charaMoveFns.forEach(([, [charaKey, moveType, ...props]], i) => {
-      const c = nextState.charas![charaKey as string];
-      if (!c) return;
-      (c.move ??= [])[i] = [moveType as string, ...props];
-    });
-    if (nextState.charas && Object.keys(nextState.charas).length === 0) delete nextState.charas;
+    let stateCache = deepClone(base);
+    const sentenceLoadSet = new Set();
+    function tempStateTransformHandle(fnGroup: [string, VN.fnProps][]) {
+      stateCache = deepClone(stateCache);
+      stateCache.charas !== void 0 &&
+        Object.values(stateCache.charas).forEach((e) => {
+          if (e?.move) delete e.move;
+        });
+      const stateDT: typeof base = { voice: null, choice: null, loadList: [] };
+      fnGroup.forEach(([fnName, props]) => {
+        const todo = map[fnName];
+        todo && todo(stateDT, props);
+      });
+      const nextState: typeof base = Object.assign(stateCache, stateDT);
+      Object.assign((nextState.charas ??= {}), stateDT.charas);
+      Object.entries(nextState.charas).forEach(([k, v]) => {
+        if (v === null) delete nextState.charas![k];
+      });
+      Object.entries(nextState).forEach(([k, v]) => {
+        if (v === null) delete nextState[k as keyof typeof nextState];
+      });
+      const charaMoveFns = fnGroup.filter(([e]) => e === 'charaMove');
+      charaMoveFns.forEach(([, [charaKey, moveType, ...props]], i) => {
+        const c = nextState.charas![charaKey as string];
+        if (!c) return;
+        (c.move ??= [])[i] = [moveType as string, ...props];
+      });
+      if (nextState.charas && Object.keys(nextState.charas).length === 0) delete nextState.charas;
 
-    // charas,
-    const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
-    nextState.loadList.push(
-      ...getFileKeysKeys.filter((key) => nextState[key]).map((key) => nextState[key] as string),
-      ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key)),
-      ...([charaKey ? CharaInfo.getAvatarFilekey(charaKey) : ''].filter(Boolean) as string[])
-    );
-
-    sentence.state = deepClone(nextState);
+      // charas
+      const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
+      nextState.loadList = Array.from(
+        new Set([
+          ...nextState.loadList!,
+          ...getFileKeysKeys.filter((key) => nextState[key]).map((key) => nextState[key] as string),
+          ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key)),
+          ...([CharaInfo.getAvatarFilekey(charaKey)].filter(Boolean) as string[]),
+        ])
+      );
+      nextState.loadList.forEach((e) => sentenceLoadSet.add(e));
+      // sentence.states =
+      return (stateCache = nextState);
+    }
+    sentence.states = [];
+    fns.anime.forEach((e) => sentence.states!.push(tempStateTransformHandle(e)));
+    sentence.lastState = Object.assign(tempStateTransformHandle(fns.state), { loadList: Array.from(sentenceLoadSet) });
+    sentence.lastState.charas && Object.values(sentence.lastState.charas).map((e: any) => (e.haha = 1));
+    // = deepClone(tempState);
     // const newNeed = new Set(base);
   }
+  // function getParagraphBaseNeed(paragraphRecord: VN.StaticStory['paragraphRecord'], nowParagraph: VN.Paragraph) {
+  //   const { source } = nowParagraph;
+  //   if (source.length === 0) return {};
+  //   // @ts-ignore: findLastIndex
+  //   const lastGotNeedIndex = source.findLastIndex((paragraphKey: string) => Data.sentenceCache.get(paragraphRecord[paragraphKey].end)?.state);
+  //   const lastState: Data.SentenceState =
+  //     lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(paragraphRecord[source[lastGotNeedIndex]].end)!.state);
+  //   for (let i = lastGotNeedIndex + 1; i < source.length; ++i) {
+  //     for (let j = paragraphRecord[source[i]].start; j <= paragraphRecord[source[i]].end; ++j) writeState(lastState, Data.sentenceCache.get(j)!);
+  //   }
+  //   return deepClone(Data.sentenceCache.get(paragraphRecord[source[source.length - 1]].end)!.state);
+  // }
   function getParagraphBaseNeed(paragraphRecord: VN.StaticStory['paragraphRecord'], nowParagraph: VN.Paragraph) {
     const { source } = nowParagraph;
     if (source.length === 0) return {};
     // @ts-ignore: findLastIndex
     const lastGotNeedIndex = source.findLastIndex((paragraphKey: string) => Data.sentenceCache.get(paragraphRecord[paragraphKey].end)?.state);
     const lastState: Data.SentenceState =
-      lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(paragraphRecord[source[lastGotNeedIndex]].end)!.state);
+      lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(paragraphRecord[source[lastGotNeedIndex]].end)!.lastState)!;
     for (let i = lastGotNeedIndex + 1; i < source.length; ++i) {
       for (let j = paragraphRecord[source[i]].start; j <= paragraphRecord[source[i]].end; ++j) writeState(lastState, Data.sentenceCache.get(j)!);
     }
-    return deepClone(Data.sentenceCache.get(paragraphRecord[source[source.length - 1]].end)!.state);
+    return deepClone(Data.sentenceCache.get(paragraphRecord[source[source.length - 1]].end)!.lastState);
   }
   export function getState(ID: VN.StaticSentence['ID']) {
     const sentence = Data.sentenceCache.get(ID);
     if (sentence === void 0) throw new Error(`getState(): 不存在的句子ID: ${ID}`);
-    if (sentence.state) return sentence.state!;
+    if (sentence.lastState) return sentence.lastState!;
     if (ID % 0x10000 !== 0) {
-      const prevSentenceNeed = deepClone(Data.sentenceCache.get(ID - 1)?.state);
+      const prevSentenceNeed = deepClone(Data.sentenceCache.get(ID - 1)?.lastState);
       if (prevSentenceNeed) {
         writeState(prevSentenceNeed, sentence);
-        return sentence.state!;
+        return sentence.lastState!;
       }
     }
     const { staticBookID, staticStoryID, staticSentenceID } = VN.decodeStaticSentenceID(ID);
@@ -248,6 +319,6 @@ export namespace EXStaticSentence {
     if (nowParagraph === void 0) throw new Error(`getState(): 未找到包含 0x${staticSentenceID.toString(16)} 的段落`);
     const nowParagraphBaseNeed = getParagraphBaseNeed(paragraphRecord, nowParagraph);
     for (let i = nowParagraph.start; i <= ID; ++i) writeState(nowParagraphBaseNeed, Data.sentenceCache.get(i)!);
-    return sentence.state!;
+    return sentence.lastState!;
   }
 }

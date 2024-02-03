@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useLayoutEffect } from 'react';
 /**
  *
  * @param 入参按顺序传入kv对phaseName-conditionCount,首个phaseName将作为起始值。
@@ -14,7 +14,7 @@ export function useDTJ<T extends number | string>(
   const [condition, setCondition] = useState(
     () => Object.fromEntries(phaseConfig.map(([phaseName, conditionCount]) => [phaseName, Array(conditionCount).fill(false)])) as Record<T, boolean[]>
   );
-  useEffect(() => {
+  useLayoutEffect(() => {
     let nextOrder = phaseOrder;
     while (nextOrder + 1 < phaseConfig.length && condition[phaseConfig[nextOrder][0]].every((e) => e)) ++nextOrder;
     nextOrder !== phaseOrder && setPhaseOrder(nextOrder);

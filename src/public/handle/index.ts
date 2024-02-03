@@ -23,7 +23,7 @@ function getDeepCloneMain() {
   };
   return main;
 }
-export function deepClone(val: any) {
+export function deepClone<T>(val: T): T {
   const main = getDeepCloneMain();
   return main(val);
 }

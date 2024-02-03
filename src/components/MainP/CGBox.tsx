@@ -12,19 +12,21 @@ export type CGBoxProps = {
 };
 export const CGBox: FC<CGBoxProps> = ({ CG, flags: [done], phase }) => {
   const doneFlag = done(),
-    updateDone = () => done(true);
+    updateDone = () => done(true),
+    acting = phase === MainPhase.act;
 
   const [lastCG, setLastCG] = useState<typeof CG>();
   const lastCGSrcRef = useRef<string>();
   const coverSrc = useMemo(() => {
-    if (!doneFlag && CG) return getSrc(CG);
+    if (CG) return getSrc(CG);
     return void 0;
   }, [CG]);
   useEffect(() => {
     if (CG === lastCG && !doneFlag) updateDone();
   }, [doneFlag, lastCG]);
   useEffect(() => {
-    if (doneFlag && lastCGSrcRef.current !== coverSrc) {
+    console.log(doneFlag, lastCG, CG);
+    if (doneFlag && lastCG !== CG && lastCGSrcRef.current !== coverSrc) {
       lastCGSrcRef.current = CG !== void 0 ? coverSrc : void 0;
       setLastCG(CG);
     }
@@ -32,15 +34,11 @@ export const CGBox: FC<CGBoxProps> = ({ CG, flags: [done], phase }) => {
 
   return (
     <>
-      <div
-        className={classNames('cg-box', 'last', phase === MainPhase.CG && coverSrc === void 0 ? 'out' : void 0)}
-        onAnimationEnd={updateDone}
-        key={lastCG}
-      >
+      <div className={classNames('cg-box', 'last', acting && coverSrc === void 0 ? 'out' : void 0)} onAnimationEnd={updateDone} key={lastCG}>
         <img src={lastCGSrcRef.current}></img>
       </div>
       <div
-        className={classNames('cg-box', 'hide', phase === MainPhase.CG && coverSrc !== void 0 ? 'in' : void 0)}
+        className={classNames('cg-box', 'hide', acting && coverSrc !== void 0 ? 'in' : void 0)}
         onAnimationEnd={updateDone}
         key={lastCG !== CG ? CG : ''}
       >

@@ -59,7 +59,7 @@ function useLoadingResult(loadList: string[]): LoadingResult {
       [LoadingPhase.waiting]: null,
       [LoadingPhase.loading]: () => {
         (() => {
-          const progressUpdateDelay = 200 as const; // 进度刷新间隔
+          const progressUpdateDelay = 100 as const; // 进度刷新间隔
           const needPackageKeys: readonly string[] = Array.from(
             new Set(
               loadListRef.current
@@ -110,7 +110,7 @@ function useLoadingResult(loadList: string[]): LoadingResult {
             })
             .reduce((lastPromise, nextLoad, i) => {
               // 串行是否改良为n任务并行？
-              // TODO: 出错处理
+              // todo: 出错处理
               return lastPromise.then(() =>
                 nextLoad().catch((e) => {
                   console.error(`加载${needPackageKeys[i]}时错误\n${e}`);
@@ -220,9 +220,9 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
   useEffect(() => {
     const todoMap: Record<LoadingPPhase, (() => void) | null> = {
       [LoadingPPhase.init]: () => {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
           delay_init(true);
-        }, 50);
+        });
       },
       [LoadingPPhase.in]: () => {
         tipsViewTJ(true);
@@ -267,13 +267,6 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
       },
       [LoadingPPhase.done]: () => {
         pageAction.load(null);
-        // setTimeout(() => {
-        //   pageAction.load({
-        //     loadList: [], // todo: 首页加载信息填充
-        //     tips: [],
-        //     title: '欢迎A',
-        //   });
-        // }, 500);
       },
     };
     const todo = todoMap[phase];
@@ -285,7 +278,11 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
     todos !== void 0 && todos.forEach((todo) => todo());
   }, [phase]);
   useEffect(() => {
-    // 更新进度条啦
+    // 更新进度条
+    if (loadingPhase === LoadingPhase.waiting) {
+      setStyle({ ...style, '--percentage': (0).toString() });
+      return;
+    }
     const needCount = progress.needList.length;
     if (!needCount) {
       setStyle({ ...style, '--percentage': (100).toString() });

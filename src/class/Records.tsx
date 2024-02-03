@@ -59,7 +59,6 @@ export class PackageInfo implements PackageInfoLike {
   private loadPromiseOnStepCallbacks?: Partial<Record<GetZip.Worker_getZipState, ((msg: GetZip.Worker_getZipMessage) => void)[]>>;
   private loadPromise?: Promise<any>;
   load(onStepCallback?: Partial<Record<GetZip.Worker_getZipState, (msg: GetZip.Worker_getZipMessage) => void>>): Promise<[string, string[]] | any> {
-    // if (this.loadPromise) debugger
     if (onStepCallback !== void 0) {
       Object.entries(onStepCallback).forEach(([state, fn]) => {
         ((this.loadPromiseOnStepCallbacks ??= {})[state as GetZip.Worker_getZipState] ??= []).push(fn);
@@ -83,12 +82,12 @@ export class PackageInfo implements PackageInfoLike {
             : fileRecord[fileKey_s].setInDBTrue();
         });
       }
-      // TODO:hit helper
+      // TODO: hit helper
       // hit DB
       type DBfile = { path: string; fileName: string; packageKey: string; code: string };
       const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key);
       if (fromDBfiles) {
-        // TODO: 文件校验（md5）
+        // TODO: 文件校验（e-tag,需要改动数据库存储信息）
         this.worker = void 0;
         const needFileNameSet = new Set(Object.values(this.fileKeyNameMap));
         const fileNameList: string[] = [];
@@ -264,11 +263,17 @@ export class CharaInfo {
   pic: Record<string, string>;
   avatar?: string;
   static getPicFilekey(key: string, style: string): string | null {
-    if (charaRecord[key] === void 0) throw new Error(`CharaInfo.getPicFilekey(): 不存在的人物记录: ${key}`);
+    if (charaRecord[key]?.pic === void 0) {
+      key && console.warn(`CharaInfo.getPicFilekey(): 不存在的人物立绘记录: ${key}`);
+      return null;
+    }
     return charaRecord[key].pic[style] ?? null;
   }
   static getAvatarFilekey(key: string): string | null {
-    if (charaRecord[key] === void 0) throw new Error(`CharaInfo.getAvatarFilekey(): 不存在的人物记录: ${key}`);
+    if (charaRecord[key] === void 0) {
+      key && console.warn(`CharaInfo.getAvatarFilekey(): 不存在的人物头像记录: ${key}`);
+      return null;
+    }
     return charaRecord[key].avatar ?? null;
   }
   constructor(key: string, name: string, pic: Record<string, string>, avatar?: string) {

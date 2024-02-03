@@ -22,7 +22,8 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
   const doneFlag = done(),
     initFlag = init(),
     updateDone = () => done(true),
-    updateInit = () => init(true);
+    updateInit = () => init(true),
+    acting = phase === MainPhase.act;
   const [
     charaBoxPhase,
     {
@@ -109,11 +110,12 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
         moveKeys.length && setMoveCount(0);
         moveKeys.forEach((key) => (AnimationEndMemo.current.move[key] = charas[key]!.move!.map(() => false)));
       }
+      console.log('AnimationEndMemo.current', deepClone(AnimationEndMemo.current));
       updateInit();
     }
   });
   useLayoutEffect(() => {
-    if (initFlag && phase === MainPhase.chara) {
+    if (initFlag && acting) {
       reset();
       if (Object.keys(AnimationEndMemo.current.out).length === 0) outDone(true);
       if (Object.keys(AnimationEndMemo.current.in).length === 0) inDone(true);
@@ -168,6 +170,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
     // 更新charaBox的chara状态缓存（不包括图像文件数据，图像文件数据的更新在handleAnimationEnd）
     if (inDone() && outDone() && transformDone()) setLastCharas(deepClone(charas));
   }, [inDone(), outDone(), transformDone()]);
+  // eslint-disable-next-line complexity
   const handleAnimationEnd = (type: keyof typeof AnimationEndMemo.current, key: string, moveKey?: number) => {
     if (type === 'move') {
       // move有两层obj，单独处理（key为charaKey-moveCount）
@@ -218,8 +221,9 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
         const lastChara = lastCharas?.[k],
           chara = charas?.[k];
         const [moveClass, moveProps] = (() => {
-          if (chara && charaBoxPhase === CharaBoxPhase.move && AnimationEndMemo.current.move[k] !== void 0) {
+          if (chara?.move && charaBoxPhase === CharaBoxPhase.move && AnimationEndMemo.current.move[k] !== void 0) {
             if (AnimationEndMemo.current.move[k][moveCount] !== void 0) {
+              console.warn(chara);
               if (chara?.move![moveCount] === void 0) throw new Error(`获取moveClass失败`);
               return [`move-${chara.move[moveCount][0]}`, chara.move[moveCount]];
             }
@@ -238,8 +242,10 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
                 'last',
                 (() => {
                   if (charaBoxPhase === CharaBoxPhase.out && AnimationEndMemo.current.out[k] !== void 0) {
+                    console.log('o1');
                     return 'out';
                   } else if (charaBoxPhase === CharaBoxPhase.transform && AnimationEndMemo.current.transform[k] !== void 0) {
+                    console.log('o2');
                     return 'out';
                   }
                 })(),

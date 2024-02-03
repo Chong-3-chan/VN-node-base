@@ -1,6 +1,6 @@
 import type { VN } from '../class/Book';
 import type { CharaInfo, FileInfo, PackageInfo, TipsGroup } from '../class/Records';
-import type { Checker } from './globalSave';
+import { Checker } from './globalSave';
 
 // key-value(includes key)
 export class KKVRecord<T extends { key: string | number }> implements Record<string | number, T> {
@@ -33,10 +33,11 @@ export type SentenceState = {
 
   voice?: string | null;
   choice?: [type: 'para' | 'story', nextAny: string, text: string][] | null;
-  loadList: string[];
+  loadList?: string[];
 };
 export interface EXStaticSentence extends VN.StaticSentence {
-  state?: SentenceState;
+  states?: SentenceState[];
+  lastState?: SentenceState;
 }
 export const sentenceCache = new Map<VN.StaticSentence['ID'], EXStaticSentence>();
 export const fileCache = new Map();
@@ -57,6 +58,7 @@ interface HomeResource {
 export const homeResource: HomeResource = {
   BGM: '_H_BGM_0',
   backgroundImageList: [
+    [new Checker(['!',[],[]]),'_H_BG_1']
     //优先选择最后一个通过check的图片
   ],
   backgroundImage: '_H_BG_0',

@@ -9,7 +9,7 @@ type ChoiceProps = {
   choice: SentenceState['choice'];
   flags: ((value?: boolean) => boolean)[];
   phase: MainPhase;
-  handleGoNextSentence: (force: true, nextSentenceID: number) => void;
+  handleGoNextSentence: (nextSentenceID: number, force: true) => void;
 };
 export const Choice: FC<ChoiceProps> = ({ choice, flags: [done], phase, handleGoNextSentence }) => {
   const { pageState, pageAction } = usePageState();
@@ -36,8 +36,9 @@ export const Choice: FC<ChoiceProps> = ({ choice, flags: [done], phase, handleGo
                   const currentStoryKey = pageState.currentKeys.story;
                   if (currentStoryKey === null) throw new Error(`choice-story: currentStoryKey异常`);
                   const nextParagraphKey = nextAny;
-                  handleGoNextSentence(true, staticStoryRecord[currentStoryKey].paragraphRecord[nextParagraphKey].start);
-                  // pageAction.setSentenceID(staticStoryRecord[currentStoryKey].paragraphRecord[nextParagraphKey].start);
+                  handleGoNextSentence(staticStoryRecord[currentStoryKey].paragraphRecord[nextParagraphKey].start, true);
+                  updateDone(); 
+                  // 故事跳转不需要updateDone。如果都update，则在快进模式下选择故事跳转选项会出错。
                 } else if (type === 'story') {
                   const currentBookKey = pageState.currentKeys.book;
                   if (currentBookKey === null) throw new Error(`choice-story: currentBookKey异常`);
@@ -52,10 +53,8 @@ export const Choice: FC<ChoiceProps> = ({ choice, flags: [done], phase, handleGo
                       )}`
                     );
                   }
-                  handleGoNextSentence(true, nextStoryID << 16);
-                  // pageAction.setSentenceID();
+                  handleGoNextSentence(nextStoryID << 16, true);
                 }
-                updateDone();
               }}
             >
               {<StrokedText text={text}></StrokedText>}

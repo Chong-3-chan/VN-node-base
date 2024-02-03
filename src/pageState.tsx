@@ -56,7 +56,7 @@ type PageAction = {
   load: (args: PageState['LoadingPProps']) => void;
   setActivePage: (nextActivePage: ActivePageEnum, sentenceId?: number) => void;
   setSentenceID: (nextSentenceID: number) => Promise<void>;
-  jumpToParagraphEndToStory: () => Promise<void>;
+  jumpToCurrentParagraphEndToStory: () => Promise<void>;
   callDialog: (props: DialogProps) => void;
   callFX: ReturnType<typeof useFXHandle>['call'];
 };
@@ -101,7 +101,7 @@ const pageActionInit: Partial<PageAction> = {
   load: void 0,
   setActivePage: void 0,
   setSentenceID: void 0,
-  jumpToParagraphEndToStory: void 0,
+  jumpToCurrentParagraphEndToStory: void 0,
   callDialog: void 0,
 };
 const pageStateContext = createContext(pageStateInit);
@@ -289,9 +289,8 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
         if (last.staticStoryID === nextStaticStoryID) {
           // 只跳语句：history功能 不触发load 具体UI效果在MainP实现(检查pageState.sentenceID变化)
           firstSentence = sentenceCache.get(nextSentenceID);
-          console.log(firstSentence);
+          // console.log(firstSentence);
           if (firstSentence === void 0) throw new Error(`setSentenceID(): nextSentenceID有误: ${nextSentenceID}`);
-          // await updateFileCache(VN.getFnsNeedFilekeys(firstSentence)); // todo: 更正
           const nextState = EXStaticSentence.getState(nextSentenceID);
           const loadList = nextState.loadList;
           await updateFileCache(loadList as string[]);
@@ -299,13 +298,13 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
           return;
         }
         if (last.staticBookID !== nextStaticBookID) {
-          // 洗掉story的KKV
+          // 书换了，洗掉story的KKV
           // todo: 最后未使用-限制缓存大小
           console.log('洗story', last.staticBookID, nextStaticBookID);
           for (const key in staticStoryRecord) delete staticStoryRecord[key];
         }
       }
-      // 故事不同重写sentenceCache
+      // 故事不同: 重写sentenceCache
       await VN.StaticStory.getRecordFromDB(nextStaticStoryID).then((e) => KKVRecord.push(staticStoryRecord, [e]));
       const nextBook = staticBookRecord[Book_KeyIDEnum[nextStaticBookID]];
       if (nextBook === void 0) throw new Error(`跳转的Book未找到: 0x${nextStaticBookID.toString(16).padStart(2, '0')}`);
@@ -329,10 +328,7 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
           if (firstSentence === void 0) throw new Error(`setSentenceID(): nextSentenceID有误: ${nextSentenceID}`);
 
           const nextState = EXStaticSentence.getState(nextSentenceID);
-          const loadList = Object.values(nextState)
-            .map((e) => (typeof e !== 'object' || e === null ? e : Object.values(e).map((e) => e!.key)))
-            .flat(1)
-            .filter(Boolean);
+          const loadList = nextState.loadList;
           await updateFileCache(loadList as string[]);
           sentenceIDSetter(nextSentenceID);
           return;
@@ -374,7 +370,7 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
     },
     [load, setSentenceID]
   );
-  const jumpToParagraphEndToStory = useCallback<PageAction['jumpToParagraphEndToStory']>(() => {
+  const jumpToParagraphEndToStory = useCallback<PageAction['jumpToCurrentParagraphEndToStory']>(() => {
     if (!currentObjs.book) throw new Error(`jumpToParagraphEndToStory(): 未进入故事就尝试跳转`);
     const nextStoryKey = currentObjs.paragraph.endToStory;
     if (typeof nextStoryKey !== 'string') {
@@ -399,7 +395,7 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [currentKeys, setSentenceID, setActivePage]);
   const { add: callDialog, handle: DialogHandle } = useDialogHandle();
   const { call: callFX, handle: FXhandle } = useFXHandle();
-  const pageAction: PageAction = { setActivePage, load, setSentenceID, jumpToParagraphEndToStory, callDialog, callFX };
+  const pageAction: PageAction = { setActivePage, load, setSentenceID, jumpToCurrentParagraphEndToStory: jumpToParagraphEndToStory, callDialog, callFX };
 
   return (
     <pageStateContext.Provider value={pageState}>

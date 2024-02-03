@@ -15,22 +15,31 @@ export namespace VN {
   type Category = 'BOOK' | 'STORY';
   const equationLineTest = Object.freeze({
     BOOK: {
-      propNames: Object.freeze(['start', 'defaultStyle', 'cover', 'check']),
-      RegExpMap: Object.freeze({
-        start: /^".+?"$/,
-        defaultStyle: /^".+?"$/,
-        end: /^\[\[".+?",".+?"\](,\[".+?",".+?"\])*\]$/,
-        cover: /^".+?"$/,
-        check: /(^".+?"$)|(^\["[&|!]"(,\["[&|!]"(,(\[\]|\[".+?"(,".+?")*\])){2}\]){2}\]$)/,
+      needPropsName: Object.freeze(['start', 'defaultStyle', 'cover', 'check']),
+      checkFnMap: Object.freeze({
+        // start: /^".+?"$/,
+        // defaultStyle: /^".+?"$/,
+        // end: /^\[\[".+?",".+?"\](,\[".+?",".+?"\])*\]$/,
+        // cover: /^".+?"$/,
+        // check: /(^".+?"$)|(^\["[&|!]"(,\["[&|!]"(,(\[\]|\[".+?"(,".+?")*\])){2}\]){2}\]$)/,
+        start: (v: any) => typeof v === 'string',
+        defaultStyle: (v: any) => typeof v === 'string',
+        end: (v: any) => Array.isArray(v) && v.every((item) => Array.isArray(item) && item.length === 2 && item.every((e) => typeof e === 'string')),
+        cover: (v: any) => typeof v === 'string',
+        check: (v: any) => GlobalSave.Checker.propsCheck(v),
       }),
     },
     STORY: {
-      propNames: Object.freeze(['title', 'tips']),
-      RegExpMap: Object.freeze({
-        title: /^".+?"$/,
-        end: /^\[".+?"(,".+?")*\]$/,
-        tips: /^\[".+?"(,".+?")*\]$/,
-        to: /^".+?"$/,
+      needPropsName: Object.freeze(['title', 'tips']),
+      checkFnMap: Object.freeze({
+        // title: /^".+?"$/,
+        // end: /^\[".+?"(,".+?")*\]$/,
+        // tips: /^\[".+?"(,".+?")*\]$/,
+        // to: /^".+?"$/,
+        title: (v: any) => typeof v === 'string',
+        end: (v: any) => Array.isArray(v) && v.every((e) => typeof e === 'string'),
+        tips: (v: any) => Array.isArray(v) && v.every((e) => typeof e === 'string'),
+        to: (v: any) => typeof v === 'string',
       }),
     },
   });
@@ -38,17 +47,18 @@ export namespace VN {
     VNLines: readonly string[],
     category: 'BOOK',
     check: boolean
-  ): [{ [propName in keyof typeof equationLineTest.BOOK.RegExpMap]: any }, number];
+  ): [{ [propName in keyof typeof equationLineTest.BOOK.checkFnMap]: any }, number];
   function readProps(
     VNLines: readonly string[],
     category: 'STORY',
     check: boolean
-  ): [{ [propName in keyof typeof equationLineTest.STORY.RegExpMap]: any }, number];
+  ): [{ [propName in keyof typeof equationLineTest.STORY.checkFnMap]: any }, number];
   function readProps(VNLines: readonly string[], category: Category, check: boolean) {
-    const re: any = [{}, VNLines.length];
+    const re: [Record<string, any>, number] = [{}, VNLines.length];
     const props = re[0];
     if (check) {
-      const RegExpMap = equationLineTest[category].RegExpMap;
+      // check状态下，props可以用assign叠加覆盖！
+      const checkFnMap = equationLineTest[category].checkFnMap;
       for (let i = 1; i < VNLines.length; ++i) {
         const currentLine = VNLines[i];
         if (currentLine[0] !== '>') {
@@ -57,26 +67,43 @@ export namespace VN {
           break;
         }
         const [ikey, ivalue] = equationLineToKV(currentLine);
-        const reg = RegExpMap[ikey as keyof typeof RegExpMap];
-        if (reg) {
-          if (!reg.test(ivalue)) {
-            throw new Error(`VN.readProps(): 追加属性${ikey}格式出错。\n\t匹配:${reg}\n\t读取到:${ivalue}`);
+        if (ikey === 'props') {
+          try {
+            Object.assign(props, JSON.parse(ivalue));
+          } catch (error) {
+            throw new Error(`VN.readProps(): props不是合法的JSON - VN第 ${i} 行。\n"${VNLines[i]}"`);
           }
+        } else {
+          console.warn('VN.readProps(): 非props的追加属性暂时无效');
         }
-        props[ikey] = JSON.parse(ivalue);
+        Object.entries(props).forEach(([k, v]) => {
+          const propCheckFn = checkFnMap[k as keyof typeof checkFnMap];
+          if (propCheckFn && !propCheckFn(v)) {
+            throw new Error(`VN.readProps(): 追加属性props-${ikey}类型检查未通过。\n\t属性:props-${k}\n\t读取到:${JSON.stringify(v, null, 2)}`);
+          }
+        });
+        // props[ikey] = JSON.parse(ivalue);
       }
     } else {
-      for (let i = 1; i < VNLines.length; ++i) {
-        const currentLine = VNLines[i];
-        const [ikey, ivalue] = equationLineToKV(currentLine);
-        props[ikey] = JSON.parse(ivalue);
+      // for (let i = 1; i < VNLines.length; ++i) {
+      //   const currentLine = VNLines[i];
+      //   const [ikey, ivalue] = equationLineToKV(currentLine);
+      //   props[ikey] = JSON.parse(ivalue);
+      // }
+      const currentLine = VNLines[1];
+      const [ikey, ivalue] = equationLineToKV(currentLine);
+      if (ikey !== 'props') throw new Error('VN.readProps(): 未在行 1 找到props追加属性。');
+      try {
+        Object.assign(props, JSON.parse(ivalue));
+      } catch (error) {
+        throw new Error(`VN.readProps(): props不是合法的JSON - VN第 ${1} 行。\n"${VNLines[1]}"`);
       }
     }
-    const propNames = equationLineTest[category].propNames;
-    let firstLost = propNames.find((name) => !props[name]);
+    const needPropsName = equationLineTest[category].needPropsName;
+    let firstLost = needPropsName.find((name) => !props[name]);
     if (firstLost)
       throw new Error(
-        `VN.readProps(): 构造${category}-VN时追加属性不足够或不对应。缺少:${firstLost}\n需要:${propNames.join(',')}。\n读取到:\n${JSON.stringify(
+        `VN.readProps(): 构造${category}-VN时追加属性不足够或不对应。缺少:${firstLost}\n需要:${needPropsName.join(',')}。\n读取到:\n${JSON.stringify(
           re,
           null,
           2
@@ -99,7 +126,7 @@ export namespace VN {
     key: string;
     constructor(key: string) {
       this.key = key;
-      // todo: 需要Runtime定义吗？
+      // --todo: 需要Runtime定义吗？ 24.02.01判断为不需要
     }
   }
   export type fnProps = (string | fnProps)[];
@@ -108,7 +135,8 @@ export namespace VN {
     // line: string
     charaKey: string;
     text: string;
-    fns: [string, fnProps][];
+    // fns改造: 类型改动
+    fns: { anime: [string, fnProps][][]; state: [string, fnProps][] };
     static async getRecordsFromDB(staticStoryID: number) {
       const re = await dbh.getMRange('Sentence', { lower: staticStoryID << 16, upper: (staticStoryID + 1) << 16 }).then((arr) => {
         return arr.map((e: StaticSentence) => {
@@ -121,14 +149,37 @@ export namespace VN {
     constructor(ID: number, sentenceLine: string) {
       this.ID = ID;
       // this.line = sentenceLine
-      const [charaKey, text, ...fnsStringList] = sentenceLine.slice(1).split('\x1e');
+      // fns改造: 读取匹配方式改动
+      // const [charaKey, text, ...fnsStringList] = sentenceLine.slice(1).split('\x1e');
+      // this.charaKey = charaKey;
+      // this.text = text;
+      // this.fns = fnsStringList.map((fnString) => {
+      //   const firstLeftBracketIndex = fnString.indexOf('[');
+      //   const [fnName, propsStr] = [fnString.slice(0, firstLeftBracketIndex), fnString.slice(firstLeftBracketIndex)];
+      //   return [fnName, JSON.parse(propsStr)];
+      // });
+
+      // 改造1:
+      const [charaKey, text, ...fnGroupsStringList] = sentenceLine.slice(1).split('\x1e');
       this.charaKey = charaKey;
       this.text = text;
-      this.fns = fnsStringList.map((fnString) => {
-        const firstLeftBracketIndex = fnString.indexOf('[');
-        const [fnName, propsStr] = [fnString.slice(0, firstLeftBracketIndex), fnString.slice(firstLeftBracketIndex)];
-        return [fnName, JSON.parse(propsStr)];
-      });
+      console.log(fnGroupsStringList);
+      const allFnsGroup = fnGroupsStringList.map((fnGroupString) => {
+        const fnGroup = fnGroupString
+          .split('\x1f')
+          .map((fnString) => {
+            const firstLeftBracketIndex = fnString.indexOf('[');
+            if (firstLeftBracketIndex === -1) return null;
+            const [fnName, propsStr] = [fnString.slice(0, firstLeftBracketIndex), fnString.slice(firstLeftBracketIndex)];
+            return [fnName, JSON.parse(propsStr)] as [string, fnProps];
+          })
+          .filter(Boolean);
+        return fnGroup;
+      }) as [string, fnProps][][];
+      this.fns = {
+        anime: allFnsGroup.slice(0, -1),
+        state: allFnsGroup[allFnsGroup.length - 1] ?? [],
+      };
 
       // console.log(this)
     }
@@ -159,24 +210,28 @@ export namespace VN {
       toStory !== void 0 && (this.toStory = toStory);
     }
   }
-  export function getFnsNeedFilekeys(staticSentence: StaticSentence): string[] {
+  export function getSentenceNeedFilekeys(staticSentence: StaticSentence): string[] {
+    // 获取语句fn需要的资源keys
     if (staticSentence === void 0) throw new Error('getFnsNeedFilekeys(): 传入了空参数');
+    // fns改造: fn名规范
     const map: Record<string, (props: any) => string | null> = {
-      Place: (props: any[]) => props[0],
+      place: (props: any[]) => props[0],
       chara: (props: [string, string, string]) => CharaInfo.getPicFilekey(props[0], props[1]),
       CG: (props: any[]) => props[0],
       BGM: (props: any[]) => props[0],
       voice: (props: any[]) => props[0],
     };
+    // fns改造: 从fns.anime找 done
     return Array.from(
       new Set(
-        staticSentence.fns
-          .map((e) => {
+        [
+          ...staticSentence.fns.anime.flat(1).map((e) => {
             const [fnName, props] = e;
             const todo = map[fnName];
             return todo !== void 0 ? todo(props) ?? null : null;
-          })
-          .filter((e) => e !== null)
+          }),
+          CharaInfo.getAvatarFilekey(staticSentence.charaKey),
+        ].filter((e) => e !== null)
       )
     ) as string[];
   }
@@ -233,7 +288,7 @@ export namespace VN {
         for (; currentLine[0] === '@'; currentLine = VNLines[++i]) {
           if (nextSentenceID > maxSentenceID) throw new Error(`StaticStory构造: 故事 ${this.ID} 语句过多。`);
           const newStaticSentence = new StaticSentence(nextSentenceID++, currentLine);
-          getFnsNeedFilekeys(newStaticSentence).forEach((e) => loadSet.add(e));
+          getSentenceNeedFilekeys(newStaticSentence).forEach((e) => loadSet.add(e));
           sentenceCache.push(newStaticSentence);
         }
         const paragraphEndID = nextSentenceID - 1;
@@ -243,8 +298,8 @@ export namespace VN {
         else if (paragraphKey !== currentLine.slice(1))
           throw new Error(`StaticStory构造: 读到段落结束标识不匹配于行 ${i}。读取到:\n\t${currentLine.slice(1)},\n应为:\n\t${paragraphKey}`);
 
-        // todo: choice改造后需要再调整
-        const choiceFns = sentenceCache[sentenceCache.length - 1].fns.find(([fnName]) => fnName === 'choice');
+        // fns改造: 改为从fns.state找 done?
+        const choiceFns = sentenceCache[sentenceCache.length - 1].fns.state.find(([fnName]) => fnName === 'choice');
         if (!isEndParagraph) {
           if (!choiceFns) throw new Error(`StaticStory构造: 异常的非end段落${key} - ${paragraphKey}: 最后一句不是选项\n${VNLines[i - 1]}`);
           choiceFns[1].forEach(([type, nextAny, text]) => {
@@ -256,7 +311,6 @@ export namespace VN {
             } else if (type === 'story') {
               const nextStroy = nextAny;
               (paragraphConnect.toStory[paragraphKey] ??= []).push(nextStroy as string);
-              // ...
             }
           });
         } else if (choiceFns) throw new Error(`StaticStory构造: 异常的end段落${key} - ${paragraphKey}: 存在choice`);
@@ -303,7 +357,7 @@ export namespace VN {
     defaultStyle: string;
     end: [string, string][];
     cover: string; // homeResource's filekey
-    check: GlobalSave.CheckerConstructorProps;
+    check: GlobalSave.CheckerConstructorProps<GlobalSave.StoryCheckerMode>;
     Story_KeyIDEnum: KeyIDEnum;
     constructor(ID: number, key: string, [BookVN, StoryVNMap]: [string, { [StoryKey: string]: string }]) {
       // 构造时更新Book_KeyIDEnum
@@ -312,7 +366,7 @@ export namespace VN {
       Book_KeyIDEnum[ID] = this.key = key;
       const VNLines = BookVN.split('\n')
         .map((l) => l.trim())
-        .filter((l) => l);
+        .filter(Boolean);
 
       const [{ start, defaultStyle, end, cover, check }] = readProps(VNLines, 'BOOK', true);
       this.start = start;
@@ -339,7 +393,7 @@ export namespace VN {
             StoryVNMap[key]
               .split('\n')
               .map((l) => l.trim())
-              .filter((l) => l)
+              .filter(Boolean)
           )
         );
       }
@@ -366,23 +420,4 @@ export namespace VN {
     }
     throw new Error(`encodeStaticSentenceID(): 入参异常: \n${JSON.stringify(obj, null, 2)}`);
   }
-
-  // export function fromObject(vm: string) {
-  //     const lines = vm.split('\n').map(l => l.trim()).filter(l => l)
-  //     const firstLine = lines[0]
-  //     if (firstLine[0] !== '=') throw new Error(`VN.fromObject(): 传入的vm字符串非空首行未以"="起始。\n错误的行:"${firstLine}"`)
-  //     const [category, key] = firstLine.slice(1).split(':');
-  //     switch (category as Category) {
-  //         case 'BOOK':
-  //         // return new StaticBook(-1, key, lines)
-  //         case "STORY":
-  //         // return new StaticStory(-1, key, lines)
-  //         default: throw new Error(`VN.fromObject(): 传入的vm字符串类型字段值(${category})未定义。`)
-  //     }
-  // }
-  // export function toObject() {
-
-  // }
 }
-
-// export const vmtoobj = (e: string) => console.log(VN.fromObject(e))

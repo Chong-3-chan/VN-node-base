@@ -56,7 +56,7 @@ type TextBarProps = { charaKey: string; FlowingTextProps: FlowingTextProps; hand
 export const TextBar: FC<TextBarProps> = ({ charaKey, FlowingTextProps, handleGoNextSentence }) => {
   const phase = FlowingTextProps.phase;
   const FlowingTextDoneFlag = FlowingTextProps.flags[1]();
-  const avatarFilekey = charaKey ? CharaInfo.getAvatarFilekey(charaKey) : null;
+  const avatarFilekey = CharaInfo.getAvatarFilekey(charaKey);
   const avatarSrc = useRef<string | undefined>(void 0);
   const [avatarChanged, setAvatarChanged] = useState(true);
   useEffect(() => {

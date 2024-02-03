@@ -40,17 +40,17 @@
   },
   "book": {
     "书「一」": [
-      "=BOOK:书「一」\n>props={\"start\":\"道可道\",\"defaultStyle\":\"style-00\",\"end\":[[\"非常道\",\"GG\"],[\"名可名\",\"GG\"]],\"cover\":\"_H_BG_1\",\"check\":[\"!\",[\"!\",[],[]],[\"!\",[],[]]]}\n",
+      "=BOOK:书「一」\n>start=\"道可道\"\n>defaultStyle=\"style-00\"\n>end=[[\"非常道\",\"GG\"],[\"名可名\",\"GG\"]]\n>cover=\"_H_BG_1\"\n>check=[\"!\",[\"!\",[],[]],[\"!\",[],[]]]\n",
       {
-        "道可道": "=STORY:道可道\n>props={\"title\":\"一 · 一 道可道\",\"tips\":[\"test\"],\"to\":\"非常道\"}\n\u00020aa\n@\u001e背景、音乐和人物的进入。\u001eplace[\"_P_INDOOR_5\"]\u001fBGM[\"_BGM_01\"]\u001echara[\"12\",\"01\",\"A2\"]\u001e\n@\u001e背景、音乐和人物的切换。\u001eplace[\"_P_INDOOR_4\"]\u001fBGM[\"_BGM_02\"]\u001echara[\"12\",\"02\",\"A2\"]\u001e\n@\u001e背景、音乐和人物的切换2。\u001eplace[\"_P_INDOOR_4\"]\u001fBGM[\"_BGM_02\"]\u001echara[\"12\",\"02\",\"A1\"]\u001e\n@12\u001e人物动作。\u001echaraMove[\"12\",\"nod\"]\u001echaraMove[\"12\",\"shake\"]\u001e\n@\u001eCG进入。\u001eCG[\"CG_01\"]\u001e\n@\u001eCG保持。\u001e\n@\u001eCG切换。\u001eCG[\"CG_02\"]\u001e\n@\u001eCG、背景、音乐和人物的退出。\u001echaraOut[\"default\",\"12\"]\u001eplace[]\u001eCGOut[]\u001eBGM[]\u001e\n@\u001e分支选项\u001echoice[[\"story\",\"非常道\",\"去：非常道\"],[\"story\",\"名可名\",\"去：名可名\"],[\"para\",\"1\",\"慢去：非常道\"],[\"para\",\"2\",\"慢去：名可名\"]]\n\u00030aa\n\u00021\u001b非常道\n@\u001e选择了后半句\u001e\n\u00031\n\u00022\u001b名可名\u001e\n@\u001e选择了下一句\u001e\n\u00032",
-        "非常道": "=STORY:非常道\n>props={\"title\":\"一 · 二 非常道\",\"tips\":[\"test\"]}\n\u00020\u001b\n@12\u001e非常道。\u001eplace[\"_P_INDOOR_5\"]\u001fBGM[\"_BGM_01\"]\u001echara[\"12\",\"01\",\"B2\"]\u001e\n\u00030",
-        "名可名": "=STORY:名可名\n>props={\"title\":\"二 · 一 名可名\",\"tips\":[\"test\"]}\n\u00020\u001b\n@12\u001e名可名...\u001echara[\"12\",\"01\",\"B3\"]\u001eplace[\"_P_INDOOR_4\"]\u001fBGM[\"_BGM_02\"]\u001e\n\u00030"
+        "道可道": "=STORY:道可道\n>title=\"一 · 一 道可道\"\n>tips=[\"test\"]\n>to=\"非常道\"\n\u00020aa\n@\u001e背景、音乐和人物的进入。\u001echara[\"12\",\"01\",\"A2\"]\u001ePlace[\"_P_INDOOR_5\"]\u001eBGM[\"_BGM_01\"]\n@\u001e背景、音乐和人物的切换。\u001ePlace[\"_P_INDOOR_4\"]\u001eBGM[\"_BGM_02\"]\u001echara[\"12\",\"02\",\"A2\"]\n@\u001e背景、音乐和人物的切换2。\u001ePlace[\"_P_INDOOR_4\"]\u001eBGM[\"_BGM_02\"]\u001echara[\"12\",\"02\",\"A1\"]\n@12\u001e人物动作。\u001echaraMove[\"12\",\"nod\"]\u001echaraMove[\"12\",\"shake\"]\n@\u001eCG进入。\u001eCG[\"CG_01\"]\n@\u001eCG保持。\n@\u001eCG切换。\u001eCG[\"CG_02\"]\n@\u001eCG、背景、音乐和人物的退出。\u001echaraOut[\"default\",\"12\"]\u001ePlace[null]\u001eCGOut[]\u001eBGM[]\n@\u001e分支选项\u001echoice[[\"story\",\"非常道\",\"去：非常道\"],[\"story\",\"名可名\",\"去：名可名\"],[\"para\",\"1\",\"慢去：非常道\"],[\"para\",\"2\",\"慢去：名可名\"]]\n\u00030aa\n\u00021\u001b非常道\n@\u001e选择了后半句\n\u00031\n\u00022\u001b名可名\n@\u001e选择了下一句\n\u00032",
+        "非常道": "=STORY:非常道\n>title=\"一 · 二 非常道\"\n>tips=[\"test\"]\n\u00020\u001b\n@12\u001e非常道。\u001echara[\"12\",\"01\",\"B2\"]\u001ePlace[\"_P_INDOOR_5\"]\u001eBGM[\"_BGM_01\"]\n\u00030",
+        "名可名": "=STORY:名可名\n>title=\"二 · 一 名可名\"\n>tips=[\"test\"]\n\u00020\u001b\n@12\u001e名可名...\u001echara[\"12\",\"01\",\"B3\"]\u001ePlace[\"_P_INDOOR_4\"]\u001eBGM[\"_BGM_02\"]\n\u00030"
       }
     ],
     "书「二」": [
-      "=BOOK:书「二」\n>props={\"start\":\"非常名\",\"defaultStyle\":\"style-00\",\"end\":[[\"非常名\",\"2GG\"]],\"cover\":\"_H_BG_0\",\"check\":[\"&\",[\"!\",[],[]],[\"&\",[\"书「一」/道可道\"],[]]]}\n",
+      "=BOOK:书「二」\n>start=\"非常名\"\n>defaultStyle=\"style-00\"\n>end=[[\"非常名\",\"2GG\"]]\n>cover=\"_H_BG_0\"\n>check=[\"&\",[\"!\",[],[]],[\"&\",[\"书「一」/道可道\"],[]]]\n",
       {
-        "非常名": "=STORY:非常名\n>props={\"title\":\"二 · 二 非常名\",\"tips\":[\"test\"]}\n\u00020\u001b\n@12\u001e非常名。\u001eplace[\"_P_INDOOR_4\"]\u001e\n@\u001e将解锁：档案2，新的背景图片。\u001echaraOut[\"default\",\"12\"]\u001eplace[null]\u001e\n\u00030"
+        "非常名": "=STORY:非常名\n>title=\"二 · 二 非常名\"\n>end=[\"0\"]\n>tips=[\"test\"]\n\u00020\u001b\n@12\u001e非常名。\u001ePlace[\"_P_INDOOR_4\"]\n@\u001e将解锁：档案2，新的背景图片。\u001echaraOut[\"default\",\"12\"]\u001ePlace[null]\n\u00030"
       }
     ]
   },
