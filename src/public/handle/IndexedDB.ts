@@ -189,8 +189,8 @@ export const dbh: DBHandle = (function () {
   const versionString = localStorage.getItem('version');
   const now = Date.now();
   let version = versionString === null ? now : parseInt(versionString);
-  if (localStorage.getItem('storeRecord') !== storeRecordJson) {
-    localStorage.setItem('storeRecord', storeRecordJson);
+  if (localStorage.getItem('store-record') !== storeRecordJson) {
+    localStorage.setItem('store-record', storeRecordJson);
     version = now;
   }
   localStorage.setItem('version', version.toString());

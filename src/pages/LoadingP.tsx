@@ -303,6 +303,7 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
       }}
     >
       <div className="body">
+        <div className="background" />
         <div className={`header`}></div>
         <div className={`footer`}></div>
         <div className={`body-inner`}>

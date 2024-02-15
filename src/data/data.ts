@@ -54,14 +54,15 @@ interface HomeResource {
       fileKey: string;
     };
   };
+  loadlist: string[];
 }
 export const homeResource: HomeResource = {
   BGM: '_H_BGM_0',
   backgroundImageList: [
-    [new Checker(['!',[],[]]),'_H_BG_1']
+    [new Checker(['!', [], []]), '_H_BG_1'],
     //优先选择最后一个通过check的图片
   ],
-  backgroundImage: '_H_BG_0',
+  backgroundImage: '_H_BG_1',
   booksCover: {},
   elements: {
     title: {
@@ -71,4 +72,5 @@ export const homeResource: HomeResource = {
       fileKey: '_H_LOGO',
     },
   },
+  loadlist: [],
 };

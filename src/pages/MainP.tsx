@@ -12,6 +12,8 @@ import { Choice } from '../components/MainP/Choice';
 import { ControlButtonsBarBox } from '../components/MainP/ControlButtonsBarBox';
 import { HistoryView } from '../components/MainP/HistoryView';
 import { debug } from 'console';
+import { updateIGlobalSave } from '../data/globalSave';
+import { VN } from '../class/Book';
 
 export type MainPMode = 'auto' | 'skip' | 'default';
 
@@ -21,7 +23,7 @@ function useMainPActionPhase(currentSentence: EXStaticSentence, doneFlag: (v?: b
   const [
     phase,
     {
-      act: [a, b, c, d],
+      act: [placeDone, charaInit, charaDone, CGDone],
       // stepDone: [],
     },
     reset,
@@ -30,29 +32,36 @@ function useMainPActionPhase(currentSentence: EXStaticSentence, doneFlag: (v?: b
   useLayoutEffect(() => {
     setCount(0);
     reset();
-    if (!currentSentence.states!.length) {
-      [a, b, c, d].forEach((e) => e(true));
-      !doneFlagValue && doneFlag(true);
-    }
+    // if (!currentSentence.states!.length) {
+    //   !doneFlagValue && doneFlag(true);
+    // }
   }, [currentSentence]);
   useLayoutEffect(() => {
     if (phase === 'stepDone') {
-      setCount((e) => e + 1);
-      if (count + 1 < currentSentence.states!.length) {
-        reset();
-      } else !doneFlagValue && doneFlag(true);
+      setCount(count + 1);
+      if (count + 1 < currentSentence.states!.length) reset();
+      // else !doneFlagValue && doneFlag(true);
     }
   }, [phase]);
   useLayoutEffect(() => {
     if (doneFlagValue && count < currentSentence.states!.length) {
       setCount(currentSentence.states!.length);
-      [a, b, c, d].forEach((e) => !e() && e(true));
+      charaInit(false); // 重新生成AnimationEndMemo，十分重要。
     }
   }, [doneFlagValue]);
+  useEffect(() => {
+    // count关系到currentState的实际值。需要在count改变、currentState更新后，再给组件完成信号，
+    // 组件才能拿到最新的state更新内部状态。
+    if (count >= currentSentence.states!.length) {
+      [placeDone, charaInit, charaDone, CGDone].forEach((e) => e(true));
+      !doneFlagValue && doneFlag(true);
+    }
+  }, [count]);
+  // console.log('CG!!', phase, count, currentSentence.states!.length, [a(), b(), c(), d()]);
   return {
     phase,
     currentState: count >= currentSentence.states!.length ? currentSentence.lastState : currentSentence.states![count],
-    update: [a, b, c, d],
+    update: [placeDone, charaInit, charaDone, CGDone],
   };
 }
 
@@ -143,7 +152,10 @@ export const MainP: FC = (props) => {
   }, [isAutoMode]);
   useEffect(() => {
     const todoMap: Record<MainPhase, () => void> = {
-      [MainPhase.act]: function (): void {},
+      [MainPhase.act]: function (): void {
+        updateIGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, text: pageState.sentenceID + '' });
+        updateIGlobalSave('readStoryPath', pageState.currentKeys.storyPath!);
+      },
       [MainPhase.text]: function (): void {},
       [MainPhase.choice]: function (): void {},
       [MainPhase.done]: function (): void {
@@ -164,33 +176,46 @@ export const MainP: FC = (props) => {
     };
     todoMap[phase]();
   }, [phase, isSkipMode]);
-  const handleGoNextSentenceThrottle = useRef<{ on: boolean; allow: boolean; timeout: number }>({ on: true, allow: true, timeout: 300 });
+  const handleGoNextSentenceThrottle = useRef<{ on: boolean; allow: boolean; timeout: number }>({
+    on: true,
+    allow: true,
+    timeout: 100,
+  });
   // 限制玩家阅读两句话的间隔
   const handleSkipTransfrom = useCallback(() => {
     setSkipTransfrom(true);
   }, []);
 
   const handleGoNextSentence = useCallback(
+    // eslint-disable-next-line complexity
     (nextSentenceID?: number, force?: boolean) => {
-      if (!force && handleGoNextSentenceThrottle.current.on) {
-        if (!handleGoNextSentenceThrottle.current.allow) return;
-      }
+      if (!force && handleGoNextSentenceThrottle.current.on && !handleGoNextSentenceThrottle.current.allow) return;
       if (autoPlayTimeOut !== null) {
         clearTimeout(autoPlayTimeOut);
         setAutoPlayTimeOut(null);
       }
 
       // console.warn(force, !force && phase !== MainPhase.done, phase);
-      if (!force && phase !== MainPhase.done) handleSkipTransfrom();
-      else {
+      if (!force && phase !== MainPhase.done) {
+        console.log('skip');
+        handleSkipTransfrom();
+      } else {
         if (nextSentenceID !== void 0) {
           // choice功能专用
+          const nextStoryID = nextSentenceID >> 16,
+            currentStoryID = pageState.currentObjs.story!.ID;
+          if (currentStoryID === void 0) throw new Error(`handleGoNextSentence(): 获取当前故事ID失败。`);
+          if (nextStoryID !== currentStoryID) {
+            updateIGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
+          }
           pageAction.setSentenceID(nextSentenceID);
           // setNextSentenceID(void 0);
         } else {
           // console.warn(pageState.currentObjs.paragraph, pageState.sentenceID);
-          if (pageState.currentObjs.paragraph!.end === pageState.sentenceID) pageAction.jumpToCurrentParagraphEndToStory();
-          else pageAction.setSentenceID(pageState.sentenceID! + 1);
+          if (pageState.currentObjs.paragraph!.end === pageState.sentenceID) {
+            pageAction.jumpToCurrentParagraphEndToStory();
+            updateIGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
+          } else pageAction.setSentenceID(pageState.sentenceID! + 1);
         }
 
         if (!force && handleGoNextSentenceThrottle.current.on) {
@@ -202,7 +227,7 @@ export const MainP: FC = (props) => {
         // 限制了阅读速度
       }
     },
-    [phase, autoPlayTimeOut]
+    [autoPlayTimeOut, phase]
   );
 
   useEffect(() => {
@@ -225,7 +250,7 @@ export const MainP: FC = (props) => {
       <TextBar
         FlowingTextProps={{ text: currentSentence!.text, flags: [textInit, textDone], phase }}
         charaKey={currentSentence.charaKey}
-        handleGoNextSentence={() => handleGoNextSentence()}
+        handleGoNextSentence={() => setTimeout(handleGoNextSentence, 50)}
       />
       <Choice choice={currentSentence.lastState?.choice} flags={[choiceDone]} phase={phase} handleGoNextSentence={handleGoNextSentence}></Choice>
       <ControlButtonsBarBox

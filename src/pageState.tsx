@@ -26,6 +26,7 @@ export enum ActivePageEnum {
   MainP = 'MainP',
 }
 type PageState = {
+  initDone: boolean;
   activePage: ActivePageEnum | null;
   LoadingPProps: LoadingPProps | null;
   sentenceID: number | null;
@@ -34,11 +35,13 @@ type PageState = {
         book: null;
         story: null;
         paragraph: null;
+        storyPath: null;
       }
     | {
         book: string;
         story: string;
         paragraph: string;
+        storyPath: string;
       };
   currentObjs:
     | {
@@ -54,32 +57,36 @@ type PageState = {
 };
 type PageAction = {
   load: (args: PageState['LoadingPProps']) => void;
-  setActivePage: (nextActivePage: ActivePageEnum, sentenceId?: number) => void;
+  setActivePage: (nextActivePage: ActivePageEnum, sentenceID?: number) => void;
   setSentenceID: (nextSentenceID: number) => Promise<void>;
   jumpToCurrentParagraphEndToStory: () => Promise<void>;
   callDialog: (props: DialogProps) => void;
   callFX: ReturnType<typeof useFXHandle>['call'];
 };
-function getHomePLoadList(): string[] {
-  const BGM = homeResource.BGM;
-  const covers = Object.values(homeResource.booksCover);
-  const elements = Object.values(homeResource.elements).map((e) => e.fileKey);
-  let backgroundImage;
-  const lastbackgroundImage = homeResource.backgroundImageList.reverse().find(([c]) => c.check())?.[1];
-  if (lastbackgroundImage) homeResource.backgroundImage = lastbackgroundImage;
-  backgroundImage = homeResource.backgroundImage;
-  return [BGM, ...covers, ...elements, backgroundImage];
-}
+// function getHomePLoadList(): string[] {
+//   const BGM = homeResource.BGM;
+//   const covers = Object.values(homeResource.booksCover);
+//   const elements = Object.values(homeResource.elements).map((e) => e.fileKey);
+//   let backgroundImage;
+//   const lastbackgroundImage = homeResource.backgroundImageList.reverse().find(([c]) => c.check())?.[1];
+//   if (lastbackgroundImage) homeResource.backgroundImage = lastbackgroundImage;
+//   backgroundImage = homeResource.backgroundImage;
+//   return [BGM, ...covers, ...elements, backgroundImage];
+// }
+let initFlag = false;
 const pageStateInit: PageState = (() => {
-  const loadList = getHomePLoadList();
+  const getLoadList = () => homeResource.loadlist;
   return {
+    initDone: false,
     activePage: ActivePageEnum.HomeP,
     LoadingPProps: {
-      loadList: loadList,
+      get loadList() {
+        return getLoadList();
+      },
       tips: ['test'],
       title: '欢迎！',
       onLoaded: async () => {
-        await updateFileCache(loadList);
+        await updateFileCache(getLoadList());
         return;
       },
     },
@@ -88,6 +95,7 @@ const pageStateInit: PageState = (() => {
       book: null,
       story: null,
       paragraph: null,
+      storyPath: null,
     },
     currentObjs: {
       book: null,
@@ -231,8 +239,12 @@ const useFXHandle = function (): {
 
 export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
   // states
+  const [initDone, initDoneSetter] = useState<PageState['initDone']>(pageStateInit.initDone);
   const [activePage, activePageSetter] = useState<PageState['activePage']>(pageStateInit.activePage);
-  const [LoadingPProps, LoadingPPropsSetter] = useState<PageState['LoadingPProps']>(pageStateInit.LoadingPProps);
+  const [LoadingPProps, LoadingPPropsSetter] = useState<PageState['LoadingPProps']>(() => {
+    if (!initFlag) ((pageStateInit.LoadingPProps!.onStepCase ??= {}).out ??= []).push(() => initDoneSetter((initFlag = true)));
+    return pageStateInit.LoadingPProps;
+  });
   const [sentenceID, sentenceIDSetter] = useState<PageState['sentenceID']>(pageStateInit.sentenceID);
   const currentKeys = useMemo(() => {
     if (sentenceID === null) {
@@ -247,6 +259,9 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
         book: bookKey,
         story: storyKey,
         paragraph: paragraphKey,
+        get storyPath() {
+          return `${bookKey}/${storyKey}`;
+        },
       };
     }
   }, [sentenceID]);
@@ -264,7 +279,7 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
       };
     }
   }, [sentenceID]);
-  const pageState: PageState = { activePage, LoadingPProps, sentenceID, currentKeys, currentObjs };
+  const pageState: PageState = { initDone, activePage, LoadingPProps, sentenceID, currentKeys, currentObjs };
 
   // actions
   const load = useCallback<PageAction['load']>(
@@ -339,12 +354,11 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
     [load, sentenceID]
   );
   const setActivePage = useCallback<PageAction['setActivePage']>(
-    (nextActivePage: ActivePageEnum, staticSentenceId?: number) => {
+    (nextActivePage: ActivePageEnum, staticSentenceID?: number) => {
       const todo: Record<ActivePageEnum, () => void> = {
         [ActivePageEnum.HomeP]: function (): void {
-          const loadList = getHomePLoadList();
           load({
-            loadList,
+            loadList: homeResource.loadlist,
             tips: ['test'],
             title: '前往首页',
             onStepCase: {
@@ -357,13 +371,13 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
               out: [() => activePageSetter(ActivePageEnum.HomeP)],
             },
             onLoaded: async () => {
-              await updateFileCache(loadList);
+              await updateFileCache(homeResource.loadlist);
               return;
             },
           });
         },
         [ActivePageEnum.MainP]: async function (): Promise<void> {
-          setSentenceID(staticSentenceId ?? 0);
+          setSentenceID(staticSentenceID ?? 0);
         },
       };
       todo[nextActivePage]();
@@ -395,7 +409,14 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [currentKeys, setSentenceID, setActivePage]);
   const { add: callDialog, handle: DialogHandle } = useDialogHandle();
   const { call: callFX, handle: FXhandle } = useFXHandle();
-  const pageAction: PageAction = { setActivePage, load, setSentenceID, jumpToCurrentParagraphEndToStory: jumpToParagraphEndToStory, callDialog, callFX };
+  const pageAction: PageAction = {
+    setActivePage,
+    load,
+    setSentenceID,
+    jumpToCurrentParagraphEndToStory: jumpToParagraphEndToStory,
+    callDialog,
+    callFX,
+  };
 
   return (
     <pageStateContext.Provider value={pageState}>

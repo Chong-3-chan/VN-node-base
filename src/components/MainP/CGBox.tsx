@@ -25,7 +25,7 @@ export const CGBox: FC<CGBoxProps> = ({ CG, flags: [done], phase }) => {
     if (CG === lastCG && !doneFlag) updateDone();
   }, [doneFlag, lastCG]);
   useEffect(() => {
-    console.log(doneFlag, lastCG, CG);
+    // console.log('CG!', doneFlag, lastCG, CG, s);
     if (doneFlag && lastCG !== CG && lastCGSrcRef.current !== coverSrc) {
       lastCGSrcRef.current = CG !== void 0 ? coverSrc : void 0;
       setLastCG(CG);

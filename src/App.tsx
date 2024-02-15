@@ -24,7 +24,8 @@ function Test() {
   // if (countt !== count) countt = count;
   return (
     <div style={{ position: 'fixed', display: 'flex', zIndex: 10000 }}>
-      {['00000000', '00000008', '01000000'].map((e, i) => (
+      {<button onClick={() => pageAction.setActivePage(ActivePageEnum.HomeP)}>HomeP</button>}
+      {['00000000', '00000006', '00000007', '01000000'].map((e, i) => (
         <button onClick={() => handle(parseInt(e, 16))} key={i}>
           {'0x' + e}
         </button>

@@ -123,19 +123,31 @@
     overflow: hidden;
     background-color: #f00;
 
-    &::before {
-      content: '';
-      transition: left var(--transition-delay-short), filter var(--transition-delay-short);
+    & > .background {
       position: absolute;
-      height: calc(var(--transition-width) + 32rem);
-      width: calc(var(--transition-width) + 32rem);
-      left: calc(-16rem - 1rem + 8rem + var(--back-dx));
-      right: calc(-16rem - 1rem + 8rem);
-      top: calc(-16rem - 1rem + 4.5rem);
-      background: var(--background);
-      background-size: 1.5rem 1.5rem;
-      transform: rotate(45deg) translateY(0rem);
-      animation: role 2.5s linear infinite;
+      left: -450%;
+      top: -450%;
+      height: 1000%;
+      width: 1000%;
+      // overflow: hidden;
+      transition: transform var(--transition-delay-short);
+      transform: translateX(calc(1 * var(--back-dx)));
+      &::before {
+        content: '';
+        transition: filter var(--transition-delay-short);
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        left: 0;
+        // right: calc(-16rem - 1rem + 8rem);
+        top: 0;
+        // bottom: calc(-16rem - 1rem + 4.5rem);
+        background: var(--background);
+        background-size: 1.5rem 1.5rem;
+        background-repeat: repeat;
+        transform: rotate(45deg) translateY(0rem);
+        animation: role 2.5s linear infinite;
+      }
     }
 
     @keyframes role {

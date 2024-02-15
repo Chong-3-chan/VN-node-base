@@ -1,42 +1,98 @@
 type InfoState = 'waiting' | 'done';
 interface InfoData {
-  readStory: string[] | null;
-  endedStory: string[] | null;
+  readStoryPath: string[] | null;
+  endedStoryPath: string[] | null;
   options: {} | null;
-  autoSave: {} | null;
+  autoSave: {
+    sentenceID: number;
+    text: string;
+  } | null;
   checkKeyMap: Record<string, boolean> | null;
 } // TODO: 完善属性type
-interface InfoData_wrote extends InfoData {
-  readStory: string[];
-  endedStory: string[];
-  options: {};
-  autoSave: {};
-  checkKeyMap: Record<string, boolean>;
+interface InfoData_updateProps {
+  readStoryPath: [string];
+  endedStoryPath: [string];
+  options: [{}];
+  autoSave: [
+    {
+      sentenceID: number;
+      text: string;
+    }
+  ];
+  checkKeyMap: [string, boolean];
 }
-const info: { state: InfoState; data: InfoData | InfoData_wrote } = {
+const info: { state: InfoState; data: InfoData } = {
   state: 'waiting',
   data: {
-    readStory: ['书「一」/道可道'],
-    endedStory: ['书「一」/道可道'],
+    readStoryPath: null,
+    endedStoryPath: null,
     options: null,
     autoSave: null,
     checkKeyMap: null,
   },
 };
 
+export const updateIGlobalSave = (() => {
+  const { data } = info;
+  const todo: { [key in keyof InfoData_updateProps]: (...props: InfoData_updateProps[key]) => boolean } = {
+    readStoryPath: function (storyPath: string): boolean {
+      if (!data.readStoryPath) data.readStoryPath = [];
+      if (data.readStoryPath.includes(storyPath)) return false;
+      data.readStoryPath.push(storyPath);
+      return true;
+    },
+    endedStoryPath: function (storyPath: string): boolean {
+      if (!data.endedStoryPath) data.endedStoryPath = [];
+      if (data.endedStoryPath.includes(storyPath)) return false;
+      data.endedStoryPath.push(storyPath);
+      return true;
+    },
+    options: function (props_0: {}): boolean {
+      if (!data.options) data.options = {};
+      Object.assign(data.options, props_0);
+      return true;
+    },
+    autoSave: function (props_0: { sentenceID: number; text: string }): boolean {
+      data.autoSave = props_0;
+      return true;
+    },
+    checkKeyMap: function (props_0: string, props_1: boolean): boolean {
+      if (!data.checkKeyMap) data.checkKeyMap = {};
+      if (data.checkKeyMap[props_0] === props_1) return false;
+      data.checkKeyMap[props_0] = props_1;
+      return true;
+    },
+  };
+  let callbackID: number | null = null;
+  function update() {
+    callbackID !== null && cancelAnimationFrame(callbackID);
+    callbackID = requestAnimationFrame(() => {
+      window.localStorage.setItem('VN-global-save', JSON.stringify(info.data));
+      callbackID = null;
+    });
+  }
+  return function updateIGlobalSave<T extends keyof typeof info.data>(key: T, ...props: InfoData_updateProps[T]) {
+    todo[key](...props) && update();
+    console.log('VN-global-save updated', info.data);
+  };
+})();
 // 同步读取，存在localStorage里
 try {
   const fromStorage = window.localStorage.getItem('VN-global-save');
-  if (fromStorage === null) throw new Error(`未读取到VN-global-save记录`);
+  if (fromStorage === null) {
+    window.localStorage.setItem('VN-global-save', JSON.stringify(info.data));
+    throw new Error(`未读取到VN-global-save记录`);
+  }
   const data = JSON.parse(fromStorage);
   if (data)
     Object.keys(data).forEach((e) => {
-      info.data[e as keyof typeof info.data] = data[e].data;
+      info.data[e as keyof typeof info.data] = data[e];
     });
   else throw new Error(`VN-global-save记录值异常`);
 } catch (error) {
   console.warn(error);
 }
+console.log('VN-global-save', info.data);
 info.state = 'done';
 
 // export get
@@ -73,7 +129,7 @@ export class Checker {
   checkKeyName?: string;
   check() {
     if (info.state === 'waiting') return null;
-    const infoData = info.data as InfoData_wrote;
+    const infoData = info.data as InfoData;
     const storycheckerModeCase: Record<StoryCheckerMode, (...args: any) => boolean> = {
       // some和all只用其一时 另一个检查组需要为空，结果上不生效
       // 两个组都空则返回true
@@ -100,20 +156,20 @@ export class Checker {
     const checkerTypeCase: Record<CheckerType, () => boolean> = {
       key: () => {
         const checker = this as Checher_key;
-        return infoData.checkKeyMap[checker.checkKeyName];
+        return infoData.checkKeyMap?.[checker.checkKeyName] ?? false;
       },
       '&': () => {
         const checker = this as Checher_story;
         return (
-          storycheckerModeCase[checker.read.mode](checker.read, info.data.readStory) &&
-          storycheckerModeCase[checker.ended.mode](checker.ended, info.data.endedStory)
+          storycheckerModeCase[checker.read.mode](checker.read, info.data.readStoryPath) &&
+          storycheckerModeCase[checker.ended.mode](checker.ended, info.data.endedStoryPath)
         );
       },
       '|': () => {
         const checker = this as Checher_story;
         return (
-          storycheckerModeCase[checker.read.mode](checker.read, info.data.readStory) ||
-          storycheckerModeCase[checker.ended.mode](checker.ended, info.data.endedStory)
+          storycheckerModeCase[checker.read.mode](checker.read, info.data.readStoryPath) ||
+          storycheckerModeCase[checker.ended.mode](checker.ended, info.data.endedStoryPath)
         );
       },
       '!': () => true,

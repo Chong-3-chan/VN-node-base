@@ -73,6 +73,16 @@ export async function getData() {
       backgroundImageList: homeResource.backgroundImageList.map(([c, v]: any) => [new Checker(c), v]),
       elements: Object.fromEntries(Object.entries(homeResource.elements).map(([k, v]) => [k, { fileKey: v }])) as any,
       backgroundImage: homeResource.backgroundImage,
+      get loadlist() {
+        const BGM = Data.homeResource.BGM;
+        const covers = Object.values(Data.homeResource.booksCover);
+        const elements = Object.values(Data.homeResource.elements).map((e) => e.fileKey);
+        let backgroundImage;
+        const lastbackgroundImage = Data.homeResource.backgroundImageList.reverse().find(([c]) => c.check())?.[1];
+        if (lastbackgroundImage) Data.homeResource.backgroundImage = lastbackgroundImage;
+        backgroundImage = Data.homeResource.backgroundImage;
+        return [BGM, ...covers, ...elements, backgroundImage];
+      },
     };
     const lastbackgroundImage = readHomeResource.backgroundImageList.reverse().find(([c]) => c.check())?.[1];
     if (lastbackgroundImage) readHomeResource.backgroundImage = lastbackgroundImage;
@@ -273,7 +283,7 @@ export namespace EXStaticSentence {
     sentence.states = [];
     fns.anime.forEach((e) => sentence.states!.push(tempStateTransformHandle(e)));
     sentence.lastState = Object.assign(tempStateTransformHandle(fns.state), { loadList: Array.from(sentenceLoadSet) });
-    sentence.lastState.charas && Object.values(sentence.lastState.charas).map((e: any) => (e.haha = 1));
+    // sentence.lastState.charas && Object.values(sentence.lastState.charas).map((e: any) => (e.haha = 1));
     // = deepClone(tempState);
     // const newNeed = new Set(base);
   }
