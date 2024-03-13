@@ -163,7 +163,7 @@ export namespace VN {
       const [charaKey, text, ...fnGroupsStringList] = sentenceLine.slice(1).split('\x1e');
       this.charaKey = charaKey;
       this.text = text;
-      console.log(fnGroupsStringList);
+      // console.log(fnGroupsStringList);
       const allFnsGroup = fnGroupsStringList.map((fnGroupString) => {
         const fnGroup = fnGroupString
           .split('\x1f')

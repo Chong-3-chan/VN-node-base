@@ -12,10 +12,13 @@ import { Choice } from '../components/MainP/Choice';
 import { ControlButtonsBarBox } from '../components/MainP/ControlButtonsBarBox';
 import { HistoryView } from '../components/MainP/HistoryView';
 import { debug } from 'console';
-import { updateIGlobalSave } from '../data/globalSave';
+import { updateGlobalSave } from '../data/globalSave';
 import { VN } from '../class/Book';
+import { SaveP } from '../components/MainP/SaveP';
+import { deepClone } from '../public/handle';
 
 export type MainPMode = 'auto' | 'skip' | 'default';
+export type MainPCoverPage = 'SaveP' | 'HistroyView' | null;
 
 function useMainPActionPhase(currentSentence: EXStaticSentence, doneFlag: (v?: boolean) => boolean) {
   const doneFlagValue = doneFlag();
@@ -75,7 +78,8 @@ export const MainP: FC = (props) => {
   const isAutoMode = useMemo(() => mode === 'auto', [mode]);
   const [autoPlayTimeOut, setAutoPlayTimeOut] = useState<NodeJS.Timeout | null>(null);
   const [skipTransfrom, setSkipTransfrom] = useState(false);
-  const [histroyView, setHistroyView] = useState(false);
+  // const [histroyView, setHistroyView] = useState(false);
+  const [coverPage, setCoverPage] = useState<MainPCoverPage>(null);
   // const [
   //   phase,
   //   {
@@ -127,6 +131,7 @@ export const MainP: FC = (props) => {
       // if (phase === MainPhase.place) placeDone(true);
       // else if (phase === MainPhase.chara) charaDone(true);
       // else if (phase === MainPhase.CG) CGDone(true);
+      // console.log('date1', Date.now() % 10000, phase);
       if (phase === MainPhase.act) actDone(true);
       else if (phase === MainPhase.text) textDone(true);
       else !isSkipMode && setSkipTransfrom(false);
@@ -153,12 +158,13 @@ export const MainP: FC = (props) => {
   useEffect(() => {
     const todoMap: Record<MainPhase, () => void> = {
       [MainPhase.act]: function (): void {
-        updateIGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, text: pageState.sentenceID + '' });
-        updateIGlobalSave('readStoryPath', pageState.currentKeys.storyPath!);
+        updateGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, text: pageState.sentenceID + '' });
+        updateGlobalSave('readStoryPath', pageState.currentKeys.storyPath!);
       },
       [MainPhase.text]: function (): void {},
       [MainPhase.choice]: function (): void {},
       [MainPhase.done]: function (): void {
+        // pageAction.getSave(Math.random() < 0.5 ? 3 : 0).then((e) => pageAction.save(e));
         if (isAutoMode) {
           setAutoPlayTimeOut(
             setTimeout(() => {
@@ -168,9 +174,11 @@ export const MainP: FC = (props) => {
             // from options
           );
         } else if (isSkipMode) {
-          setTimeout(() => {
-            handleGoNextSentence(void 0, true);
-          }, 50);
+          // console.time('updateFileCacheC');
+          handleGoNextSentence(void 0, true);
+          // setTimeout(() => {
+          //   // console.timeEnd('updateFileCacheC');
+          // }, 20);
         }
       },
     };
@@ -189,6 +197,7 @@ export const MainP: FC = (props) => {
   const handleGoNextSentence = useCallback(
     // eslint-disable-next-line complexity
     (nextSentenceID?: number, force?: boolean) => {
+      // console.log('handleGoNextSentence');
       if (!force && handleGoNextSentenceThrottle.current.on && !handleGoNextSentenceThrottle.current.allow) return;
       if (autoPlayTimeOut !== null) {
         clearTimeout(autoPlayTimeOut);
@@ -197,7 +206,7 @@ export const MainP: FC = (props) => {
 
       // console.warn(force, !force && phase !== MainPhase.done, phase);
       if (!force && phase !== MainPhase.done) {
-        console.log('skip');
+        // console.log('skip');
         handleSkipTransfrom();
       } else {
         if (nextSentenceID !== void 0) {
@@ -206,7 +215,7 @@ export const MainP: FC = (props) => {
             currentStoryID = pageState.currentObjs.story!.ID;
           if (currentStoryID === void 0) throw new Error(`handleGoNextSentence(): 获取当前故事ID失败。`);
           if (nextStoryID !== currentStoryID) {
-            updateIGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
+            updateGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
           }
           pageAction.setSentenceID(nextSentenceID);
           // setNextSentenceID(void 0);
@@ -214,7 +223,7 @@ export const MainP: FC = (props) => {
           // console.warn(pageState.currentObjs.paragraph, pageState.sentenceID);
           if (pageState.currentObjs.paragraph!.end === pageState.sentenceID) {
             pageAction.jumpToCurrentParagraphEndToStory();
-            updateIGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
+            updateGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
           } else pageAction.setSentenceID(pageState.sentenceID! + 1);
         }
 
@@ -235,32 +244,34 @@ export const MainP: FC = (props) => {
   }, [currentSentence]);
   console.log([
     phase,
-    {
+    deepClone({
       phase: actPhase,
       currentState,
       update: [placeDone, charaInit, charaDone, CGDone].map((e) => e()),
-    },
+    }),
   ]);
+  const forceUseLastState = phase !== MainPhase.act && skipTransfrom;
   return (
     <div id="MainP">
-      <h1>MainP</h1>
-      <PlaceBox place={currentState?.place} flags={[placeDone]} phase={phase} />
-      <CharaBox charas={currentState?.charas} flags={[charaInit, charaDone]} phase={phase} />
-      <CGBox CG={currentState?.CG} flags={[CGDone]} phase={phase} />
+      {/* <h1>MainP</h1> */}
+      <PlaceBox place={currentState?.place} flags={[placeDone]} phase={phase} forceUseLastState={forceUseLastState} />
+      <CharaBox charas={currentState?.charas} flags={[charaInit, charaDone]} phase={phase} forceUseLastState={forceUseLastState} />
+      <CGBox CG={currentState?.CG} flags={[CGDone]} phase={phase} forceUseLastState={forceUseLastState} />
       <TextBar
         FlowingTextProps={{ text: currentSentence!.text, flags: [textInit, textDone], phase }}
         charaKey={currentSentence.charaKey}
-        handleGoNextSentence={() => setTimeout(handleGoNextSentence, 50)}
+        handleGoNextSentence={() => requestAnimationFrame(() => handleGoNextSentence())}
       />
       <Choice choice={currentSentence.lastState?.choice} flags={[choiceDone]} phase={phase} handleGoNextSentence={handleGoNextSentence}></Choice>
       <ControlButtonsBarBox
         {...{
-          setHistroyView,
+          setCoverPage,
           mode,
           setMode,
         }}
       />
-      <HistoryView {...{ histroyView, setHistroyView, handleGoNextSentence, handleSkipTransfrom, setMode }} />
+      <HistoryView {...{ coverPage, setCoverPage, handleGoNextSentence, handleSkipTransfrom, setMode }} />
+      <SaveP {...{ coverPage, setCoverPage, setMode }} />
     </div>
   );
 };

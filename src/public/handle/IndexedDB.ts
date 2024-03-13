@@ -26,7 +26,7 @@ class DBHandle_base {
     re.onsuccess = (e: any) => {
       const db = e.target.result;
       this.DB = db;
-      console.log(this.name, 'DB连接成功', this.DB);
+      // console.log(this.name, 'DB连接成功', this.DB);
       this.callback.forEach((f) => f());
     };
     re.onerror = (e) => console.log('error', e);
@@ -53,6 +53,9 @@ const storeControlRequestGetterRecord = {
   },
   getM: function (this: IDBObjectStore, primaryKeys: (string | number)[]) {
     return primaryKeys.map((primaryKey) => this.get(primaryKey));
+  },
+  getAll: function (this: IDBObjectStore, primaryKeys: (string | number)[]) {
+    return this.getAll();
   },
   getMRange: function (this: IDBObjectStore, primaryKeysRange: { lower: string | number; upper: string | number }) {
     const keyRange = IDBKeyRange.bound(primaryKeysRange.lower, primaryKeysRange.upper, false, true);
@@ -89,6 +92,9 @@ class DBHandle extends DBHandle_base implements Record<keyof typeof storeControl
   }
   getM(base: StoreKey, primaryKeys: (string | number)[]) {
     return this.storeController('getM', base, primaryKeys);
+  }
+  getAll(base: StoreKey) {
+    return this.storeController('getAll', base);
   }
   getMRange(base: StoreKey, primaryKeysRange: { lower: string | number; upper: string | number }) {
     return this.storeController('getMRange', base, primaryKeysRange);
@@ -128,6 +134,7 @@ class DBHandle extends DBHandle_base implements Record<keyof typeof storeControl
     } else if (Array.isArray(request)) {
       const errorLogs: any[] = [];
       const successLogs: any[] = [];
+      // console.time('updateFileCacheB');
       Promise.all(
         request.map(
           (req, i) =>
@@ -144,7 +151,9 @@ class DBHandle extends DBHandle_base implements Record<keyof typeof storeControl
         )
       )
         .then((e) => {
-          console.log('数据库批量操作成功:', { successLogs });
+          // console.timeEnd('updateFileCacheC');
+          // console.trace();
+          // console.log('数据库批量操作成功:', { successLogs });
           resolve(e);
         })
         .catch((e) => {
@@ -169,7 +178,7 @@ class DBHandle extends DBHandle_base implements Record<keyof typeof storeControl
   }
 }
 
-type StoreKey = 'Book' | 'Story' | 'Sentence' | 'Files';
+type StoreKey = 'Book' | 'Story' | 'Sentence' | 'Files' | 'Save';
 const storeList: { key: StoreKey; index: [[primaryKey: string, isUnique: true], ...[key: string, isUnique: boolean][]] }[] = [
   { key: 'Book', index: [['ID', true]] },
   { key: 'Story', index: [['ID', true]] },
@@ -181,6 +190,7 @@ const storeList: { key: StoreKey; index: [[primaryKey: string, isUnique: true], 
       ['packageKey', false],
     ],
   },
+  { key: 'Save', index: [['ID', true]] },
 ];
 storeList.sort((a, b) => a.key.toString().localeCompare(b.key.toString()));
 const storeRecord = new KKVRecord(storeList); // 数据库配置

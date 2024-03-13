@@ -13,22 +13,42 @@ import {
   useState,
 } from 'react';
 import type { LoadingPProps } from './pages/LoadingP';
-import { Book_KeyIDEnum, KKVRecord, homeResource, sentenceCache, staticBookRecord, staticStoryRecord, tipsGroupRecord } from './data/data';
+import {
+  Book_KeyIDEnum,
+  KKVRecord,
+  charaRecord,
+  homeResource,
+  sentenceCache,
+  staticBookRecord,
+  staticStoryRecord,
+  tipsGroupRecord,
+} from './data/data';
 import { VN } from './class/Book';
 import { EXStaticSentence, updateFileCache } from './data/getData';
 import { DialogProps, Dialog, DialogPropsRuntime } from './components/public/Dialog';
 import { classNames } from './public/handle';
 import { useDTJ } from './public/handle/hooks';
+import html2canvas from 'html2canvas';
 import './FX.less';
+import { dbh } from './public/handle/IndexedDB';
 
 export enum ActivePageEnum {
   HomeP = 'HomeP',
   MainP = 'MainP',
 }
+export type DBSave = {
+  ID: number; // 0~255 0为自动存档
+  sentenceID: number;
+  time: number;
+  charaName: string;
+  text: string;
+  capture: string; // base64
+};
 type PageState = {
   initDone: boolean;
   activePage: ActivePageEnum | null;
   LoadingPProps: LoadingPProps | null;
+  isLoadingPActing: boolean;
   sentenceID: number | null;
   currentKeys:
     | {
@@ -62,6 +82,9 @@ type PageAction = {
   jumpToCurrentParagraphEndToStory: () => Promise<void>;
   callDialog: (props: DialogProps) => void;
   callFX: ReturnType<typeof useFXHandle>['call'];
+  getSave: (ID: number) => Promise<DBSave>;
+  save: (save: DBSave) => Promise<any>;
+  loadSave: (ID: number) => Promise<any>;
 };
 // function getHomePLoadList(): string[] {
 //   const BGM = homeResource.BGM;
@@ -90,6 +113,7 @@ const pageStateInit: PageState = (() => {
         return;
       },
     },
+    isLoadingPActing: true,
     sentenceID: null,
     currentKeys: {
       book: null,
@@ -237,7 +261,7 @@ const useFXHandle = function (): {
   };
 };
 
-export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
+export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableRefObject<HTMLElement> }>> = ({ children, parentRef }) => {
   // states
   const [initDone, initDoneSetter] = useState<PageState['initDone']>(pageStateInit.initDone);
   const [activePage, activePageSetter] = useState<PageState['activePage']>(pageStateInit.activePage);
@@ -279,7 +303,7 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
       };
     }
   }, [sentenceID]);
-  const pageState: PageState = { initDone, activePage, LoadingPProps, sentenceID, currentKeys, currentObjs };
+  const pageState: PageState = { initDone, activePage, LoadingPProps, isLoadingPActing: !!LoadingPProps, sentenceID, currentKeys, currentObjs };
 
   // actions
   const load = useCallback<PageAction['load']>(
@@ -409,6 +433,38 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [currentKeys, setSentenceID, setActivePage]);
   const { add: callDialog, handle: DialogHandle } = useDialogHandle();
   const { call: callFX, handle: FXhandle } = useFXHandle();
+  const getSave = useCallback<PageAction['getSave']>(
+    (ID: number) => {
+      const MainP = parentRef.current.children['MainP' as keyof HTMLCollection] as HTMLElement;
+      if (!MainP) throw new Error('getSave(): 没有打开MainP的情况下调用了getSave()');
+      const re: ReturnType<PageAction['getSave']> extends Promise<infer P> ? P : never = {
+        ID: ID,
+        sentenceID: sentenceID!,
+        time: NaN,
+        charaName: `${sentenceCache.get(sentenceID!)?.charaKey?.length ? charaRecord[sentenceCache.get(sentenceID!)!.charaKey].name : ''}`,
+        text: `${sentenceCache.get(sentenceID!)!.text}`,
+        capture: '',
+      };
+      re.charaName.length !== 0 && (re.text = `“${re.text}”`);
+      return html2canvas(MainP, { scale: 400 / MainP.offsetWidth, backgroundColor: null }).then((canvas) => {
+        re.capture = canvas.toDataURL();
+        re.time = Date.now();
+        // canvas.removeAttribute('style');
+        // canvas.setAttribute('style', 'z-index:999;position:fixed;left:0;top:0;');
+        // document.body.appendChild(canvas);
+        return re;
+      });
+    },
+    [currentObjs, parentRef, sentenceID]
+  );
+  const save = useCallback((save: DBSave) => {
+    return dbh.put('Save', save);
+  }, []);
+  const loadSave = useCallback(async (ID: number) => {
+    dbh.get('Save', ID).then((save: DBSave) => {
+      // ...
+    });
+  }, []);
   const pageAction: PageAction = {
     setActivePage,
     load,
@@ -416,6 +472,9 @@ export const PageStateProvider: FC<PropsWithChildren> = ({ children }) => {
     jumpToCurrentParagraphEndToStory: jumpToParagraphEndToStory,
     callDialog,
     callFX,
+    getSave,
+    save,
+    loadSave,
   };
 
   return (

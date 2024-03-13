@@ -4,26 +4,27 @@ import { classNames } from '../../public/handle';
 import { StrokedText } from '../public/StrokedText';
 import { FXPhase, usePageState } from '../../pageState';
 import './HistoryView.less';
-import { MainPMode } from '../../pages/MainP';
+import { MainPCoverPage, MainPMode } from '../../pages/MainP';
 type HistoryViewProps = {
-  histroyView: boolean;
-  setHistroyView: React.Dispatch<React.SetStateAction<HistoryViewProps['histroyView']>>;
+  coverPage: MainPCoverPage;
+  setCoverPage: React.Dispatch<React.SetStateAction<HistoryViewProps['coverPage']>>;
   // phase: MainPhase;
   handleGoNextSentence: (nextSentenceID?: number, force?: boolean) => void;
   handleSkipTransfrom: () => void;
   setMode: React.Dispatch<React.SetStateAction<MainPMode>>;
 };
-export const HistoryView: FC<HistoryViewProps> = ({ histroyView, setHistroyView, handleGoNextSentence, handleSkipTransfrom, setMode }) => {
+export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, handleGoNextSentence, handleSkipTransfrom, setMode }) => {
   const { pageAction, pageState } = usePageState();
   const [display, setDisplay] = useState(false);
   const histroyViewCache = useRef<EXStaticSentence[] | null>(null);
   const historyViewBoxRef = useRef<HTMLDivElement | null>(null);
-  const jumpFXFns = useRef<any>();
+  // const jumpFXFns = useRef<any>();
   useEffect(() => {
-    if (histroyView) {
+    if (coverPage === 'HistroyView') {
       requestAnimationFrame(() => {
         historyViewBoxRef.current && (historyViewBoxRef.current.scrollTop = historyViewBoxRef.current.scrollHeight);
       });
+      setMode('default');
       histroyViewCache.current = [
         pageState.currentObjs
           .paragraph!.source.map((paragraphKey) => {
@@ -38,15 +39,14 @@ export const HistoryView: FC<HistoryViewProps> = ({ histroyView, setHistroyView,
         .filter(Boolean);
       setDisplay(true);
     }
-  }, [histroyView]);
+  }, [coverPage]);
   const closeHandle = () => {
     setDisplay(false);
-    setHistroyView(false);
-    setMode('default');
+    setCoverPage(null);
     histroyViewCache.current = null;
   };
   return (
-    <div className={classNames('history-view', display ? void 0 : 'hide')}>
+    <div className={classNames('history-view', display ? void 0 : 'hide')} data-html2canvas-ignore>
       <div className="history-view-box" ref={historyViewBoxRef}>
         <div className="history-list">
           {(histroyViewCache.current ?? [])!.map((e: EXStaticSentence) => (

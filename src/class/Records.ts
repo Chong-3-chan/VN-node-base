@@ -206,6 +206,8 @@ export class FileInfo {
   static async getFilesBase64(fileKeyList: string[]) {
     // let outRecordFileKey = fileKeyList.find((filekey) => fileRecord[filekey] === void 0 || !fileRecord[filekey].inDB)
     // if (outRecordFileKey) throw new Error(`FileInfo.getFilesBase64(): 未在记录的fileKey (异常值: ${outRecordFileKey})`)
+    console.log('updateFileCache', fileKeyList);
+    // console.time('updateFileCacheA');
     const fileKeyUniqueList = Array.from(new Set(fileKeyList));
     const outDBFileKeyList: string[] = [];
     fileKeyUniqueList.forEach((fileKey) => {
@@ -213,7 +215,7 @@ export class FileInfo {
       if (!fileRecord[fileKey].inDB) outDBFileKeyList.push(fileKey);
     });
     if (outDBFileKeyList.length !== 0) console.warn(`FileInfo.getFilesBase64(): 请求了未写入DB的文件:\n${JSON.stringify(outDBFileKeyList, null, 2)}`);
-    console.log(fileCache.keys());
+    // console.log(fileCache.keys());
     let inCacheKeysSet = new Set(Array.from(fileCache.keys()));
     const fromCache = []; // 命中chache的
     const fromDBKeys = []; // 没命中需要读DB的
@@ -225,6 +227,8 @@ export class FileInfo {
         inCacheKeysSet.delete(key);
       }
     }
+    // console.timeEnd('updateFileCacheA');
+
     const resultValues = [
       ...fromCache,
       ...(await dbh.getM(
@@ -232,6 +236,7 @@ export class FileInfo {
         fromDBKeys.map((filekey) => fileRecord[filekey].getPath())
       )),
     ];
+
     return Object.fromEntries(fileKeyUniqueList.map((fileKey, i) => [fileKey, resultValues[i]]));
   }
   constructor(key: string, fromPackage: string, fileName: string, inDB?: boolean) {

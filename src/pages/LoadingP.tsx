@@ -245,14 +245,16 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
       },
       [LoadingPPhase.loading]: () => {
         start();
-        setTimeout(() => delay_loading(true), 1000);
+        setTimeout(() => delay_loading(true), 750);
         // 最短加载页面停留时间
       },
       [LoadingPPhase.out]: () => {
         if (logoMaskRef.current) {
           const event = logoMaskRef.current;
           const onTransitionEnd = function (e: TransitionEvent) {
-            if (e.propertyName === 'filter') {
+            // console.log(e);
+            // if (e.propertyName === 'filter') {
+            if (e.propertyName === 'transform') {
               delay_out(true);
               event.removeEventListener('transitionend', onTransitionEnd);
             }

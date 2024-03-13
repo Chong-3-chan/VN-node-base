@@ -32,7 +32,7 @@ const info: { state: InfoState; data: InfoData } = {
   },
 };
 
-export const updateIGlobalSave = (() => {
+export const updateGlobalSave = (() => {
   const { data } = info;
   const todo: { [key in keyof InfoData_updateProps]: (...props: InfoData_updateProps[key]) => boolean } = {
     readStoryPath: function (storyPath: string): boolean {
@@ -71,9 +71,9 @@ export const updateIGlobalSave = (() => {
       callbackID = null;
     });
   }
-  return function updateIGlobalSave<T extends keyof typeof info.data>(key: T, ...props: InfoData_updateProps[T]) {
+  return function updateGlobalSave<T extends keyof typeof info.data>(key: T, ...props: InfoData_updateProps[T]) {
     todo[key](...props) && update();
-    console.log('VN-global-save updated', info.data);
+    // console.log('VN-global-save updated', info.data);
   };
 })();
 // 同步读取，存在localStorage里

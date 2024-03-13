@@ -4,14 +4,15 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import { getData } from './data/getData';
 
-// console.warn("禁用log")
+// // console.warn("禁用log")
 // console.log = function(){}
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+const rootElement = document.getElementById('root');
+const root = ReactDOM.createRoot(rootElement as HTMLElement);
 
 getData().then(() => {
   root.render(
     // <React.StrictMode>
-      <App />
+    <App />
     // </React.StrictMode>
   );
 });

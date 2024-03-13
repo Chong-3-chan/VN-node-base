@@ -9,8 +9,9 @@ export type PlaceBoxProps = {
   place?: SentenceState['place'];
   flags: ((value?: boolean) => boolean)[];
   phase: MainPhase;
+  forceUseLastState: boolean;
 };
-export const PlaceBox: FC<PlaceBoxProps> = ({ place, flags: [done], phase }) => {
+export const PlaceBox: FC<PlaceBoxProps> = ({ place, flags: [done], phase, forceUseLastState }) => {
   const doneFlag = done(),
     updateDone = () => done(true),
     acting = phase === MainPhase.act;
@@ -25,11 +26,11 @@ export const PlaceBox: FC<PlaceBoxProps> = ({ place, flags: [done], phase }) => 
     if (place === lastPlace && !doneFlag) updateDone();
   }, [doneFlag, lastPlace]);
   useEffect(() => {
-    if (doneFlag && lastPlace !== place && lastPlaceSrcRef.current !== coverSrc) {
+    if ((doneFlag && lastPlace !== place && lastPlaceSrcRef.current !== coverSrc) || forceUseLastState) {
       lastPlaceSrcRef.current = place !== void 0 ? coverSrc : void 0;
       setLastPlace(place);
     }
-  }, [doneFlag]);
+  }, [doneFlag, forceUseLastState]);
 
   return (
     <>

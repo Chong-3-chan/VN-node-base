@@ -8,8 +8,9 @@
   top: 0;
   bottom: 0;
   margin: auto;
-  background-color: rgba(32, 32, 32, 0.8);
-  backdrop-filter: blur(0.1rem);
+  // background-color: rgba(32, 32, 32, 0.6);
+  user-select: none;
+  backdrop-filter: brightness(0.3);
   transition: opacity 0.4s, height 0.2s;
   opacity: 1;
   &.hide {
@@ -99,7 +100,7 @@
           height: 0.6rem;
           background-color: transparent;
           transition: background-color 0.2s;
-          &:hover{
+          &:hover {
             background-color: #99994444;
           }
           &:first-child:hover {
@@ -108,7 +109,6 @@
           &:last-child:hover {
             background-color: #aa335544;
           }
-
         }
       }
     }

@@ -69,7 +69,7 @@ export const TextBar: FC<TextBarProps> = ({ charaKey, FlowingTextProps, handleGo
   }, [phase]);
   return (
     <>
-      <div className="text-bar">
+      <div className="text-bar" data-html2canvas-ignore>
         <div className="header">
           <div className="chara-name">
             <StrokedText text={phase === MainPhase.text || FlowingTextDoneFlag ? charaRecord[charaKey]?.name ?? '' : ''}></StrokedText>

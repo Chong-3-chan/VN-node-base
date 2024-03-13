@@ -74,9 +74,10 @@ function Test() {
 
 function App() {
   const { pageState, pageAction } = usePageState();
+  const ref = useRef<HTMLDivElement>(null!);
   return (
-    <div className="App">
-      <PageStateProvider>
+    <div className="App" ref={ref}>
+      <PageStateProvider parentRef={ref}>
         <Pages />
         <Test />
       </PageStateProvider>

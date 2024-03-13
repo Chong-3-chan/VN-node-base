@@ -78,14 +78,15 @@ export async function getData() {
         const covers = Object.values(Data.homeResource.booksCover);
         const elements = Object.values(Data.homeResource.elements).map((e) => e.fileKey);
         let backgroundImage;
-        const lastbackgroundImage = Data.homeResource.backgroundImageList.reverse().find(([c]) => c.check())?.[1];
+        const lastbackgroundImage = Data.homeResource.backgroundImageList.findLast!(([c]) => c.check())?.[1];
         if (lastbackgroundImage) Data.homeResource.backgroundImage = lastbackgroundImage;
         backgroundImage = Data.homeResource.backgroundImage;
         return [BGM, ...covers, ...elements, backgroundImage];
       },
     };
-    const lastbackgroundImage = readHomeResource.backgroundImageList.reverse().find(([c]) => c.check())?.[1];
+    const lastbackgroundImage = readHomeResource.backgroundImageList.findLast!(([c]) => c.check())?.[1];
     if (lastbackgroundImage) readHomeResource.backgroundImage = lastbackgroundImage;
+    // debugger;
     Object.assign(Data.homeResource, readHomeResource);
   }
 
@@ -128,6 +129,8 @@ export async function getData() {
 }
 
 export async function updateFileCache(nextCacheNeedFileKeys: string[]) {
+  // console.trace();
+  // console.time('updateFileCacheA');
   const cacheNeedSet = new Set(nextCacheNeedFileKeys);
   for (const key of Data.fileCache.keys()) {
     if (cacheNeedSet.has(key)) cacheNeedSet.delete(key);
@@ -136,13 +139,17 @@ export async function updateFileCache(nextCacheNeedFileKeys: string[]) {
   // 1.如果传入的keys命中cache则被保留，并从NeedSet中delete
   // 2.如果cache的一条记录不在传入内容中则删除（下个cache状态不需要这条记录）
   // 3.最后尝试从db获取缺少部分(cacheNeedSet剩余的)
+  // console.timeEnd('updateFileCacheA');
   if (cacheNeedSet.size === 0) {
     // console.log('cache不变');
     return;
   }
+  // console.time('updateFileCacheB');
   const obj = await FileInfo.getFilesBase64(Array.from(cacheNeedSet));
   Object.entries(obj).map(([k, v]) => Data.fileCache.set(k, v));
-  console.log('nowCache', Data.fileCache.keys());
+  // console.log('nowCache', cacheNeedSet, Data.fileCache.keys());
+  // console.log('updateFileCacheB', cacheNeedSet);
+  // console.timeEnd('updateFileCacheB');
   return;
 }
 export function getSrc(fileKey: string) {

@@ -4,18 +4,18 @@ import { classNames } from '../../public/handle';
 import { StrokedText } from '../public/StrokedText';
 import { usePageState } from '../../pageState';
 import './ControlButtonsBarBox.less';
-import { MainPMode } from '../../pages/MainP';
+import { MainPCoverPage, MainPMode } from '../../pages/MainP';
 
 type HistoryViewProps = {
   mode: MainPMode;
   setMode: React.Dispatch<React.SetStateAction<HistoryViewProps['mode']>>;
-  setHistroyView: React.Dispatch<React.SetStateAction<boolean>>;
+  setCoverPage: React.Dispatch<React.SetStateAction<MainPCoverPage>>;
 };
-export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setHistroyView, mode, setMode }) => {
+export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setCoverPage, mode, setMode }) => {
   const [controlBarDisplay, setControlBarDisplay] = useState(false);
   const [buttonsBarTransforming, setButtonsBarTransforming] = useState(false);
   return (
-    <div className={classNames('control-btns-bar-box')}>
+    <div className={classNames('control-btns-bar-box')} data-html2canvas-ignore>
       <div
         className={classNames('control-btns-bar', controlBarDisplay ? 'display' : 'hide')}
         onTransitionEnd={(e) => {
@@ -26,11 +26,11 @@ export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setHistroyView, mod
       >
         {(
           [
-            ['保存(施工)'],
+            ['保存(施工)', () => setCoverPage('SaveP')],
             ['读取(施工)'],
             ['设置(施工)'],
             ['快进', () => setMode(mode === 'skip' ? 'default' : 'skip'), [mode === 'skip' ? 'active-skip' : void 0]],
-            ['历史', () => setHistroyView(true)],
+            ['历史', () => setCoverPage('HistroyView')],
             ['自动', () => setMode(mode === 'auto' ? 'default' : 'auto'), [mode === 'auto' ? 'active-auto' : void 0]],
           ] as [text: string, fn?: () => void, classNamesList?: string[]][]
         ).map(([text, fn, classNamesList], i) => {
