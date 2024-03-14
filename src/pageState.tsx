@@ -84,7 +84,7 @@ type PageAction = {
   callFX: ReturnType<typeof useFXHandle>['call'];
   getSave: (ID: number) => Promise<DBSave>;
   save: (save: DBSave) => Promise<any>;
-  loadSave: (ID: number) => Promise<any>;
+  loadSave: (ID: number, handleClose?: () => void, handleSkipTransfrom?: () => void) => void;
 };
 // function getHomePLoadList(): string[] {
 //   const BGM = homeResource.BGM;
@@ -326,7 +326,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
       if (sentenceID !== null) {
         const last = VN.decodeStaticSentenceID(sentenceID);
         if (last.staticStoryID === nextStaticStoryID) {
-          // 只跳语句：history功能 不触发load 具体UI效果在MainP实现(检查pageState.sentenceID变化)
+          // 1.故事相同只跳语句：(如history功能、读取较近的存档等) 不触发load 具体样式效果在MainP实现
           firstSentence = sentenceCache.get(nextSentenceID);
           // console.log(firstSentence);
           if (firstSentence === void 0) throw new Error(`setSentenceID(): nextSentenceID有误: ${nextSentenceID}`);
@@ -343,7 +343,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
           for (const key in staticStoryRecord) delete staticStoryRecord[key];
         }
       }
-      // 故事不同: 重写sentenceCache
+      // 2.故事不同: 重写sentenceCache
       await VN.StaticStory.getRecordFromDB(nextStaticStoryID).then((e) => KKVRecord.push(staticStoryRecord, [e]));
       const nextBook = staticBookRecord[Book_KeyIDEnum[nextStaticBookID]];
       if (nextBook === void 0) throw new Error(`跳转的Book未找到: 0x${nextStaticBookID.toString(16).padStart(2, '0')}`);
@@ -460,11 +460,37 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
   const save = useCallback((save: DBSave) => {
     return dbh.put('Save', save);
   }, []);
-  const loadSave = useCallback(async (ID: number) => {
-    dbh.get('Save', ID).then((save: DBSave) => {
-      // ...
-    });
-  }, []);
+  const loadSave = useCallback(
+    async (ID: number, handleClose?: () => void, handleSkipTransfrom?: () => void) => {
+      dbh.get('Save', ID).then((save: DBSave) => {
+        // ...
+        callDialog({
+          text: `确认读取存档 ${save.ID} 吗？`,
+          title: '读档确认',
+          // onClose: () => alert('close'),
+          optionsCallback: {
+            读取: () => {
+              const fx = callFX['transition-black-full']();
+              const nextSentenceID = save.sentenceID;
+              fx.assignOnStepCase({
+                [FXPhase.keep]: () => {
+                  handleClose?.();
+                  setSentenceID(nextSentenceID);
+                  setTimeout(() => {
+                    handleSkipTransfrom?.();
+                    fx.out();
+                  }, 100);
+                },
+              });
+              return true;
+            },
+            取消: () => true,
+          },
+        });
+      });
+    },
+    [callDialog, callFX, setSentenceID]
+  );
   const pageAction: PageAction = {
     setActivePage,
     load,

@@ -11,9 +11,7 @@ import { TextBar } from '../components/MainP/TextBar';
 import { Choice } from '../components/MainP/Choice';
 import { ControlButtonsBarBox } from '../components/MainP/ControlButtonsBarBox';
 import { HistoryView } from '../components/MainP/HistoryView';
-import { debug } from 'console';
 import { updateGlobalSave } from '../data/globalSave';
-import { VN } from '../class/Book';
 import { SaveP } from '../components/MainP/SaveP';
 import { deepClone } from '../public/handle';
 
@@ -80,25 +78,6 @@ export const MainP: FC = (props) => {
   const [skipTransfrom, setSkipTransfrom] = useState(false);
   // const [histroyView, setHistroyView] = useState(false);
   const [coverPage, setCoverPage] = useState<MainPCoverPage>(null);
-  // const [
-  //   phase,
-  //   {
-  //     [MainPhase.place]: [placeDone],
-  //     [MainPhase.chara]: [charaInit, charaDone],
-  //     [MainPhase.CG]: [CGDone],
-  //     [MainPhase.text]: [textInit, textDone],
-  //     [MainPhase.choice]: [choiceDone],
-  //     [MainPhase.done]: [],
-  //   },
-  //   reset,
-  // ] = useDTJ<MainPhase>({
-  //   [MainPhase.place]: 1,
-  //   [MainPhase.chara]: 2,
-  //   [MainPhase.CG]: 1,
-  //   [MainPhase.text]: 2,
-  //   [MainPhase.choice]: 1,
-  //   [MainPhase.done]: 0,
-  // });
 
   const [
     phase,
@@ -125,12 +104,8 @@ export const MainP: FC = (props) => {
     update: [placeDone, charaInit, charaDone, CGDone],
   } = useMainPActionPhase(currentSentence, actDone);
   useEffect(() => {
-    // if (charaInit() && textInit()) handleSkipTransfrom();
     // console.log(skipTransfrom, phase);
     if (isSkipMode || skipTransfrom) {
-      // if (phase === MainPhase.place) placeDone(true);
-      // else if (phase === MainPhase.chara) charaDone(true);
-      // else if (phase === MainPhase.CG) CGDone(true);
       // console.log('date1', Date.now() % 10000, phase);
       if (phase === MainPhase.act) actDone(true);
       else if (phase === MainPhase.text) textDone(true);
@@ -174,11 +149,7 @@ export const MainP: FC = (props) => {
             // from options
           );
         } else if (isSkipMode) {
-          // console.time('updateFileCacheC');
           handleGoNextSentence(void 0, true);
-          // setTimeout(() => {
-          //   // console.timeEnd('updateFileCacheC');
-          // }, 20);
         }
       },
     };
@@ -190,6 +161,7 @@ export const MainP: FC = (props) => {
     timeout: 100,
   });
   // 限制玩家阅读两句话的间隔
+
   const handleSkipTransfrom = useCallback(() => {
     setSkipTransfrom(true);
   }, []);
@@ -239,6 +211,12 @@ export const MainP: FC = (props) => {
     [autoPlayTimeOut, phase]
   );
 
+  const handleLoadSave = useCallback(
+    (ID: number) => {
+      pageAction.loadSave(ID, () => setCoverPage(null), handleSkipTransfrom);
+    },
+    [handleSkipTransfrom]
+  );
   useEffect(() => {
     console.log(currentSentence);
   }, [currentSentence]);
@@ -271,7 +249,7 @@ export const MainP: FC = (props) => {
         }}
       />
       <HistoryView {...{ coverPage, setCoverPage, handleGoNextSentence, handleSkipTransfrom, setMode }} />
-      <SaveP {...{ coverPage, setCoverPage, setMode }} />
+      <SaveP {...{ coverPage, setCoverPage, setMode, handleLoadSave }} />
     </div>
   );
 };

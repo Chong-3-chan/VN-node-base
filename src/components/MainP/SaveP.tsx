@@ -9,8 +9,9 @@ type SavePProps = {
   coverPage: MainPCoverPage;
   setCoverPage: React.Dispatch<React.SetStateAction<SavePProps['coverPage']>>;
   setMode: React.Dispatch<React.SetStateAction<MainPMode>>;
+  handleLoadSave: (ID: number) => void;
 };
-export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode }) => {
+export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handleLoadSave }) => {
   const { pageState, pageAction } = usePageState();
   const display = coverPage === 'SaveP';
   const [pageNo, setPageNo] = useState(0);
@@ -72,13 +73,7 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode }) => {
               </div>
               <div className="text-lines">
                 <p className="chara-name">{e.charaName}</p>
-                <p className="text">
-                  {e.text}
-                  {e.text}
-                  {e.text}
-                  {e.text}
-                  {e.text}
-                </p>
+                <p className="text">{e.text}</p>
               </div>
               <div className="ID">{'Q.save'}</div>
             </div>
@@ -157,7 +152,7 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode }) => {
             >
               <img src={e.capture} />
             </div>
-            <div className="text-lines">
+            <div className="text-lines" onClick={() => handleLoadSave(ID)}>
               <p className="chara-name">{e.charaName}</p>
               <p className="text">
                 {e.text}

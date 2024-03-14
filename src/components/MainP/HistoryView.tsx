@@ -40,7 +40,7 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
       setDisplay(true);
     }
   }, [coverPage]);
-  const closeHandle = () => {
+  const handleClose = () => {
     setDisplay(false);
     setCoverPage(null);
     histroyViewCache.current = null;
@@ -67,7 +67,7 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
                               const nextSentenceID = e.ID;
                               fx.assignOnStepCase({
                                 [FXPhase.keep]: () => {
-                                  closeHandle();
+                                  handleClose();
                                   handleGoNextSentence(nextSentenceID, true);
                                   setTimeout(() => {
                                     handleSkipTransfrom();
@@ -99,7 +99,7 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
         </div>
       </div>
       <div className="header-btns-bar">
-        <div className="close" onClick={closeHandle}></div>
+        <div className="close" onClick={handleClose}></div>
       </div>
     </div>
   );

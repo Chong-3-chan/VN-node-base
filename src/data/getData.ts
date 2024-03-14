@@ -335,7 +335,10 @@ export namespace EXStaticSentence {
     const nowParagraph = Object.values(paragraphRecord).find(({ start, end }) => staticSentenceID >= start && staticSentenceID <= end);
     if (nowParagraph === void 0) throw new Error(`getState(): 未找到包含 0x${staticSentenceID.toString(16)} 的段落`);
     const nowParagraphBaseNeed = getParagraphBaseNeed(paragraphRecord, nowParagraph);
-    for (let i = nowParagraph.start; i <= ID; ++i) writeState(nowParagraphBaseNeed, Data.sentenceCache.get(i)!);
+    for (let i = nowParagraph.start; i <= ID; ++i) {
+      const base = i === nowParagraph.start ? nowParagraphBaseNeed : Data.sentenceCache.get(i - 1)?.lastState;
+      writeState(base, Data.sentenceCache.get(i)!);
+    }
     return sentence.lastState!;
   }
 }
