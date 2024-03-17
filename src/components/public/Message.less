@@ -1,0 +1,102 @@
+@img: '~@/images';
+
+.message-handle {
+  --message-count: 0;
+  --message-height: 1.4rem;
+
+  position: absolute;
+  z-index: 3000;
+  height: calc(var(--message-count) * var(--message-height));
+  // mask-position: bottom;
+  // mask-image: linear-gradient(to top, #0000 0%, #000f var(--message-height), #000f 100%);
+  width: 100%;
+  // top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  // background-color: rgba(32, 32, 32, 0.6);
+  user-select: none;
+  transition: transform 0.2s 0.1s;
+  overflow: hidden;
+  transform: translateY(calc(-9rem + var(--message-count) * var(--message-height)));
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: start;
+  align-items: center;
+  & > .message {
+    flex-shrink: 0;
+    transform: translateY(0rem);
+    &.hide {
+      transform: translateY(-0.2rem);
+      filter: opacity(0);
+      backdrop-filter: blur(0rem);
+      background-color: #fff0;
+    }
+    transition-property: filter, transform, backdrop-filter, background-color;
+    transition-duration: 0.3s;
+    transition-delay: 0.4s;
+    font-family: 'Microsoft YaHei';
+    // border: 0.01rem solid rgba(232, 232, 232, 0.4);
+    height: 1.2rem;
+    border: 0.01rem solid silver;
+    box-sizing: border-box;
+    margin-block: 0.1rem;
+    border-radius: 0.1rem;
+    display: flex;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    width: 10rem;
+    backdrop-filter: blur(0.05rem);
+    background-color: #f0f0f0f0;
+    font-style: italic;
+
+    & > .icon {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      margin: auto;
+      margin-inline: 0.16rem;
+      height: 0.8rem;
+      width: 0.8rem;
+      background-color: #18181866;
+      mask-size: 100%;
+      mask-image: url('@{img}/message-default.svg');
+      &.save {
+        mask-image: url('@{img}/message-save.svg');
+      }
+    }
+    & > .title {
+      position: absolute;
+      left: 1.15rem;
+      top: 0.12rem;
+      font-size: 0.28rem;
+      color: #181818ff;
+    }
+    & > .text {
+      position: absolute;
+      left: 1.15rem;
+      bottom: 0.1rem;
+      height: 0.6rem;
+      width: 8rem;
+      font-size: 0.24rem;
+      line-height: 0.24rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      // border: 0.01rem solid black;
+      gap: 0.04rem;
+      color: #181818aa;
+      & > p {
+        margin: 0;
+      }
+    }
+    & > .time {
+      position: absolute;
+      right: 0.4rem;
+      top: 0.18rem;
+      font-size: 0.24rem;
+      color: #18181888;
+    }
+  }
+}

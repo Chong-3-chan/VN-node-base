@@ -54,7 +54,7 @@ interface HomeResource {
       fileKey: string;
     };
   };
-  loadlist: string[];
+  loadList: string[];
 }
 export const homeResource: HomeResource = {
   BGM: '_H_BGM_0',
@@ -72,5 +72,5 @@ export const homeResource: HomeResource = {
       fileKey: '_H_LOGO',
     },
   },
-  loadlist: [],
+  loadList: [],
 };

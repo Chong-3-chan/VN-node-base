@@ -12,11 +12,11 @@ import { Choice } from '../components/MainP/Choice';
 import { ControlButtonsBarBox } from '../components/MainP/ControlButtonsBarBox';
 import { HistoryView } from '../components/MainP/HistoryView';
 import { updateGlobalSave } from '../data/globalSave';
-import { SaveP } from '../components/MainP/SaveP';
+import { SaveP } from '../components/public/SaveP';
 import { deepClone } from '../public/handle';
 
 export type MainPMode = 'auto' | 'skip' | 'default';
-export type MainPCoverPage = 'SaveP' | 'HistroyView' | null;
+export type MainPCoverPage = 'SaveP' | 'HistroyView' | 'OptionP' | null;
 
 function useMainPActionPhase(currentSentence: EXStaticSentence, doneFlag: (v?: boolean) => boolean) {
   const doneFlagValue = doneFlag();
@@ -133,7 +133,7 @@ export const MainP: FC = (props) => {
   useEffect(() => {
     const todoMap: Record<MainPhase, () => void> = {
       [MainPhase.act]: function (): void {
-        updateGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, text: pageState.sentenceID + '' });
+        updateGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, time: Date.now() });
         updateGlobalSave('readStoryPath', pageState.currentKeys.storyPath!);
       },
       [MainPhase.text]: function (): void {},
@@ -213,7 +213,12 @@ export const MainP: FC = (props) => {
 
   const handleLoadSave = useCallback(
     (ID: number) => {
-      pageAction.loadSave(ID, () => setCoverPage(null), handleSkipTransfrom);
+      pageAction.loadSave(ID, {
+        handleClose() {
+          setCoverPage(null);
+        },
+        handleSkipTransfrom,
+      });
     },
     [handleSkipTransfrom]
   );
@@ -246,6 +251,7 @@ export const MainP: FC = (props) => {
           setCoverPage,
           mode,
           setMode,
+          handleSkipTransfrom,
         }}
       />
       <HistoryView {...{ coverPage, setCoverPage, handleGoNextSentence, handleSkipTransfrom, setMode }} />

@@ -59,7 +59,7 @@ export async function getData() {
   }
 
   {
-    // book必须最后编: fileKeys依赖
+    // book必须最后写，因为存在fileKeys依赖
     const bookCache: VN.StaticBook[] = [];
     Object.entries(book).map(([BookKey, BookVNe]: any, i) => bookCache.push(new VN.StaticBook(i, BookKey, BookVNe)));
     Data.KKVRecord.push(Data.staticBookRecord, bookCache);
@@ -67,13 +67,19 @@ export async function getData() {
   }
 
   {
-    const readHomeResource: typeof Data.homeResource = {
+    const readHomeResource: Pick<typeof Data.homeResource, 'BGM' | 'booksCover' | 'backgroundImageList' | 'elements' | 'backgroundImage'> = {
       BGM: homeResource.BGM,
       booksCover: Object.fromEntries(Object.values(Data.staticBookRecord).map((e) => [e.key, e.cover])),
       backgroundImageList: homeResource.backgroundImageList.map(([c, v]: any) => [new Checker(c), v]),
       elements: Object.fromEntries(Object.entries(homeResource.elements).map(([k, v]) => [k, { fileKey: v }])) as any,
       backgroundImage: homeResource.backgroundImage,
-      get loadlist() {
+    };
+    const lastbackgroundImage = readHomeResource.backgroundImageList.findLast!(([c]) => c.check())?.[1];
+    if (lastbackgroundImage) readHomeResource.backgroundImage = lastbackgroundImage;
+
+    Object.assign(Data.homeResource, readHomeResource);
+    Object.defineProperty(Data.homeResource, 'loadList', {
+      get() {
         const BGM = Data.homeResource.BGM;
         const covers = Object.values(Data.homeResource.booksCover);
         const elements = Object.values(Data.homeResource.elements).map((e) => e.fileKey);
@@ -83,11 +89,7 @@ export async function getData() {
         backgroundImage = Data.homeResource.backgroundImage;
         return [BGM, ...covers, ...elements, backgroundImage];
       },
-    };
-    const lastbackgroundImage = readHomeResource.backgroundImageList.findLast!(([c]) => c.check())?.[1];
-    if (lastbackgroundImage) readHomeResource.backgroundImage = lastbackgroundImage;
-    // debugger;
-    Object.assign(Data.homeResource, readHomeResource);
+    });
   }
 
   console.log(Data);
@@ -201,52 +203,12 @@ export namespace EXStaticSentence {
     //   (c.move ??= [])[c.move.length] = [moveType as string, ...props];
     // },
   };
-  // function writeState(base: Data.SentenceState, sentence: Data.EXStaticSentence) {
-  //   if (sentence.state) return;
-  //   // fns改造：在state传fns本身供box消费; 计算need-loadList
-  //   const { fns, charaKey } = sentence;
-  //   const charaMoveFns = fns.filter(([e]) => e === 'charaMove');
-  //   const tempState: typeof base = { voice: null, choice: null, loadList: [] };
-  //   fns.forEach(([fnName, props]) => {
-  //     const todo = map[fnName];
-  //     todo && todo(tempState, props);
-  //   });
-  //   const nextState: typeof base = base;
-  //   Object.assign(nextState, tempState);
-  //   nextState.charas = Object.assign({ ...base?.charas }, tempState.charas);
-  //   Object.entries(nextState.charas).forEach(([k, v]) => {
-  //     if (v === null) delete nextState.charas![k];
-  //   });
-  //   Object.entries(nextState).forEach(([k, v]) => {
-  //     if (v === null) delete nextState[k as keyof typeof nextState];
-  //   });
-  //   Object.values(nextState.charas).forEach((e) => {
-  //     if (e?.move) delete e.move;
-  //   });
-  //   charaMoveFns.forEach(([, [charaKey, moveType, ...props]], i) => {
-  //     const c = nextState.charas![charaKey as string];
-  //     if (!c) return;
-  //     (c.move ??= [])[i] = [moveType as string, ...props];
-  //   });
-  //   if (nextState.charas && Object.keys(nextState.charas).length === 0) delete nextState.charas;
-
-  //   // charas,
-  //   const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
-  //   nextState.loadList.push(
-  //     ...getFileKeysKeys.filter((key) => nextState[key]).map((key) => nextState[key] as string),
-  //     ...(nextState.charas === void 0 ? [] : Object.values(nextState.charas).map((e) => e!.key)),
-  //     ...([CharaInfo.getAvatarFilekey(charaKey)].filter(Boolean) as string[])
-  //   );
-  //   sentence.state = deepClone(nextState);
-  //   // const newNeed = new Set(base);
-  // }
   function writeState(base: Data.SentenceState = { loadList: [] }, sentence: Data.EXStaticSentence) {
     if (sentence.lastState) return;
-    // fns改造：按照fnGroup生成中间状态; 计算need-loadList
     const { fns, charaKey } = sentence;
     let stateCache = deepClone(base);
     const sentenceLoadSet = new Set();
-    function tempStateTransformHandle(fnGroup: [string, VN.fnProps][]) {
+    function handleTempStateTransform(fnGroup: [string, VN.fnProps][]) {
       stateCache = deepClone(stateCache);
       stateCache.charas !== void 0 &&
         Object.values(stateCache.charas).forEach((e) => {
@@ -275,6 +237,8 @@ export namespace EXStaticSentence {
 
       // charas
       const getFileKeysKeys: (keyof Data.SentenceState)[] = ['place', 'CG', 'BGM', 'voice'];
+
+      // 每个中间状态的资源需求
       nextState.loadList = Array.from(
         new Set([
           ...nextState.loadList!,
@@ -284,12 +248,11 @@ export namespace EXStaticSentence {
         ])
       );
       nextState.loadList.forEach((e) => sentenceLoadSet.add(e));
-      // sentence.states =
       return (stateCache = nextState);
     }
     sentence.states = [];
-    fns.anime.forEach((e) => sentence.states!.push(tempStateTransformHandle(e)));
-    sentence.lastState = Object.assign(tempStateTransformHandle(fns.state), { loadList: Array.from(sentenceLoadSet) });
+    fns.anime.forEach((e) => sentence.states!.push(handleTempStateTransform(e)));
+    sentence.lastState = Object.assign(handleTempStateTransform(fns.state), { loadList: Array.from(sentenceLoadSet) });
     // sentence.lastState.charas && Object.values(sentence.lastState.charas).map((e: any) => (e.haha = 1));
     // = deepClone(tempState);
     // const newNeed = new Set(base);

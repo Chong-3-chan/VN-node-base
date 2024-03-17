@@ -1,0 +1,174 @@
+#HomeP {
+  .ContentP {
+    --index: 0;
+    font-family: 'Microsoft YaHei';
+
+    user-select: none;
+    position: absolute;
+    z-index: 100;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: #000b;
+    transition: background-color 0.3s, opacity 0.5s, width 0.3s;
+    backdrop-filter: blur(0.1rem);
+    &.hide {
+      background-color: transparent;
+      transition: background-color 0.3s, opacity 0.3s, width 0s 0.5s;
+      opacity: 0;
+      pointer-events: none;
+    }
+    @keyframes lighting {
+      0% {
+        text-shadow: white 0 0 0.1rem;
+      }
+      50% {
+        text-shadow: white 0 0 0.15rem;
+      }
+      100% {
+        text-shadow: white 0 0 0.1rem;
+      }
+    }
+    & > .header {
+      font-size: 0.5rem;
+      color: white;
+      position: relative;
+      height: 0.5rem;
+      margin-block: 0.8rem 0.2rem;
+      text-shadow: white 0 0 0.1rem;
+      animation: lighting 3s ease-in-out infinite;
+      transition: opacity 0.2s;
+      &.hide {
+        opacity: 0;
+      }
+    }
+    & > .footer {
+      font-size: 0.45rem;
+      color: #eee;
+      position: relative;
+      height: 0.6rem;
+      margin-block: 0.7rem 1.2rem;
+      text-shadow: #eee 0 0 0.1rem;
+      animation: lighting 3s ease-in-out infinite;
+      transition: opacity 0.2s;
+      &.hide {
+        opacity: 0;
+      }
+    }
+    & > .container {
+      width: 16rem;
+      height: 5rem;
+      display: flex;
+      align-items: center;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      justify-content: center;
+      &.switching {
+        pointer-events: none;
+      }
+
+      & > .btn-prev {
+        order: 1;
+      }
+      & > .viewer {
+        order: 2;
+      }
+      & > .btn-next {
+        order: 3;
+      }
+
+      & > .btn-prev,
+      & > .btn-next {
+        width: 5rem;
+        height: 4rem;
+        background-color: transparent;
+        color: white;
+        z-index: 1;
+      }
+
+      & > .viewer {
+        -webkit-box-reflect: below 0 -webkit-linear-gradient(transparent, transparent 50%, #0008);
+        width: 6rem;
+        height: 5rem;
+        position: relative;
+        & > .wrapper {
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 100%;
+          overflow: hidden;
+          display: flex;
+          flex-wrap: nowrap;
+          flex-direction: row;
+          transform: translateX(calc(var(--index) * -6rem));
+          transition: transform 0.5s ease-in-out;
+          & > .book-cover-box {
+            height: 100%;
+            width: 6rem;
+            display: flex;
+            flex-direction: row;
+            flex-wrap: nowrap;
+            align-content: center;
+            justify-content: center;
+            transform: scale(1) rotateY(0deg) rotateX(0deg);
+            filter: opacity(0.6) blur(0.02rem);
+            transition: transform 0.5s, filter 0.3s;
+            transition-timing-function: ease-in-out;
+            overflow: hidden;
+            &.selected {
+              transform: scale(1) rotateY(0deg) rotateX(0deg) translateY(0rem);
+              filter: opacity(1) blur(0rem);
+            }
+            &:has(+ .book-cover-box.selected) {
+              transform: scale(0.75) rotateY(-15deg) rotateX(5deg);
+            }
+            &.selected + .book-cover-box {
+              transform: scale(0.75) rotateY(15deg) rotateX(5deg);
+            }
+            &.locked {
+              filter: grayscale(1);
+            }
+            &.locked::after {
+              content: '';
+              position: absolute;
+              margin: auto;
+              left: 0;
+              right: 0;
+              top: 0;
+              bottom: 0;
+              height: 0.8rem;
+              width: 0.8rem;
+              background-size: 0.8rem;
+              mask-repeat: no-repeat;
+              mask-position: center;
+              -webkit-mask-repeat: no-repeat;
+              -webkit-mask-position: center;
+              mask-size: auto 100%;
+              -webkit-mask-size: auto 100%;
+              --locked-svg: url(data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNjgzODYyMTQ5NTEwIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjMwNTIiIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PHBhdGggZD0iTTc3MS4wOTA0NTMxMiA0NzEuNjQ3NTE1NjJMMjUyLjg5OTcwMzEyIDQ3MS42NDc1MTU2MmMtNDQuNzU3NTYyNSAwLTgxLjAzNjcwMzEyIDM2LjIwNDMyODEzLTgxLjAzNjcwMzEyIDgwLjg3NjI1MDAxbDAgMzQzLjA3MzM5MDYyYzAgNDQuNjcyOTA2MjUgMzYuMjc5MTQwNjIgODAuODc2MjUgODEuMDM2NzAzMTIgODAuODc2MjVsNTE4LjE5MTczNDM4IDBjNDQuNzU4NTQ2ODggMCA4MS4wNDc1MzEyNS0zNi4yMDMzNDM3NSA4MS4wNDc1MzEyNS04MC44NzYyNUw4NTIuMTM4OTY4NzUgNTUyLjUyMzc2NTYzQzg1Mi4xMzc5ODQzNyA1MDcuODUxODQzNzUgODE1Ljg0OSA0NzEuNjQ3NTE1NjIgNzcxLjA5MDQ1MzEyIDQ3MS42NDc1MTU2MnpNNTQ2LjEyNDM0Mzc1IDcyMS43Mzk3OTY4N2wwIDkwLjA0OTY0MDYzYzAgMTguODQwOTM3NS0xNS4yNjg2NDA2MiAzNC4xMzEyMzQzOC0zNC4xMjkyNjU2MyAzNC4xMzEyMzQzOC0xOC44NDk3OTY4OCAwLTM0LjEyOTI2NTYzLTE1LjI5MDI5Njg3LTM0LjEyOTI2NTYyLTM0LjEzMTIzNDM4bDAtOTAuMDQ5NjQwNjJjLTIwLjM3OTUxNTYyLTExLjgwNDYyNS0zNC4xMzAyNS0zMy44MDgzNTkzOC0zNC4xMzAyNS01OS4wNjM0ODQzOCAwLTM3LjcwMTU2MjUgMzAuNTU3OTUzMTMtNjguMjYwNSA2OC4yNTk1MTU2Mi02OC4yNjA1czY4LjI3MDM0Mzc1IDMwLjU1ODkzNzUgNjguMjcwMzQzNzUgNjguMjYwNUM1ODAuMjY1NDIxODggNjg3LjkzMTQzNzUgNTY2LjUyNTUxNTYyIDcwOS45MzUxNzE4OCA1NDYuMTI0MzQzNzUgNzIxLjczOTc5Njg3ek01MTEuOTk1MDc4MTIgMTQ3LjM3MTc1Yy0xMzEuOTUyNTE1NjIgMC0yMzguOTI5NDY4NzUgMTA1LjQ2ODg5MDYzLTIzOC45Mjk0Njg3NSAyNDQuMDQwMzQzNzVsMWUtOCAxMDUuOTgyNzM0MzcgNDc3Ljg3MDc1IDIyLjc1Mjg0Mzc1TDc1MC45MzYzNTkzOCAzOTEuNDEyMDkzNzVDNzUwLjkzNjM1OTM4IDI1Mi44NDA2NDA2MiA2NDMuOTU5NDA2MjUgMTQ3LjM3MTc1IDUxMS45OTUwNzgxMiAxNDcuMzcxNzV6TTM0MS4zNjc0NTMxMiA0OTEuNDA2ODc1TDM0MS4zNjc0NTMxMiAzODkuMDM4NzY1NjJjMC05NC4yMjA0Mzc1IDc2LjM5NTM3NS0xNzAuNjI3NjI1IDE3MC42MjY2NDA2My0xNzAuNjI3NjI1IDk0LjI0MjA5Mzc1IDAgMTcwLjYyNzYyNSA3Ni40MDcxODc1IDE3MC42Mjc2MjUgMTcwLjYyNzYyNWwwIDEwNC43NjMwOTM3NUwzNDEuMzY3NDUzMTIgNDkxLjQwNjg3NXoiIHAtaWQ9IjMwNTMiPjwvcGF0aD48L3N2Zz4=);
+              mask-image: var(--locked-svg);
+              -webkit-mask-image: var(--locked-svg);
+              background-color: #c0c0c060;
+              opacity: 0;
+              transition: opacity 0.2s;
+            }
+            &.selected.locked::after {
+              opacity: 1;
+            }
+            & > img {
+              object-fit: scale-down;
+              max-height: 100%;
+              max-width: 100%;
+              margin: auto;
+            }
+          }
+        }
+      }
+    }
+  }
+}

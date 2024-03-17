@@ -7,6 +7,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useReducer,
   useRef,
@@ -31,6 +32,7 @@ import { useDTJ } from './public/handle/hooks';
 import html2canvas from 'html2canvas';
 import './FX.less';
 import { dbh } from './public/handle/IndexedDB';
+import { Message, MessageProps, MessagePropsRuntime } from './components/public/Message';
 
 export enum ActivePageEnum {
   HomeP = 'HomeP',
@@ -81,10 +83,11 @@ type PageAction = {
   setSentenceID: (nextSentenceID: number) => Promise<void>;
   jumpToCurrentParagraphEndToStory: () => Promise<void>;
   callDialog: (props: DialogProps) => void;
+  callMessage: (props: MessageProps) => void;
   callFX: ReturnType<typeof useFXHandle>['call'];
   getSave: (ID: number) => Promise<DBSave>;
   save: (save: DBSave) => Promise<any>;
-  loadSave: (ID: number, handleClose?: () => void, handleSkipTransfrom?: () => void) => void;
+  loadSave: (ID: number, props: { handleClose?: () => void; handleSkipTransfrom?: () => void; force?: boolean }) => void;
 };
 // function getHomePLoadList(): string[] {
 //   const BGM = homeResource.BGM;
@@ -98,7 +101,7 @@ type PageAction = {
 // }
 let initFlag = false;
 const pageStateInit: PageState = (() => {
-  const getLoadList = () => homeResource.loadlist;
+  const getLoadList = () => homeResource.loadList;
   return {
     initDone: false,
     activePage: ActivePageEnum.HomeP,
@@ -156,8 +159,63 @@ const useDialogHandle = function () {
     },
     handle: (
       <div className={classNames('dialog-handle', Object.keys(dialogs.current).length ? void 0 : 'hide')}>
-        {Object.values(dialogs.current).map((e, i) => (
-          <Dialog {...e} key={i} />
+        {Object.entries(dialogs.current).map(([key, e]) => (
+          <Dialog {...e} key={key} />
+        ))}
+      </div>
+    ),
+  };
+};
+const useMessageHandle = function () {
+  const messages = useRef<Record<number, MessagePropsRuntime>>({
+    // 0: {
+    //   title: '123',
+    //   text: '123',
+    //   hide: () => {
+    //     messages.current[0].hide = null;
+    //     forceUpdate();
+    //   },
+    //   destory: () => {
+    //     delete messages.current[0];
+    //     forceUpdate();
+    //   },
+    // },
+    // 1: { title: '123', text: '123', hide: null, destory: () => {} },
+  });
+  const [, forceUpdate] = useReducer((e) => e + 1, 0);
+  const [count, updateCount] = useReducer((e) => e + 1, 0);
+  const lazyHideCount = useRef(0);
+  const lazyHideCountMax = useRef(-1);
+  const lastMessageCount = useRef(0);
+  const extraStyle: any = { '--message-count': Object.keys(messages.current).length, transition: void 0 };
+  if (lastMessageCount.current > extraStyle['--message-count']) {
+    extraStyle.transition = 'none';
+  }
+  lastMessageCount.current = extraStyle['--message-count'];
+  return {
+    add: (dialogProps: MessageProps) => {
+      messages.current[count] = {
+        ...dialogProps,
+        lazyHide() {
+          lazyHideCountMax.current = Math.max(lazyHideCountMax.current, count);
+          if (lazyHideCount.current >= count) {
+            messages.current[count].lazyHide = null;
+            forceUpdate();
+          }
+        },
+        destory() {
+          delete messages.current[count];
+          lazyHideCount.current = Math.max(lazyHideCount.current, count + 1);
+          if (lazyHideCountMax.current >= lazyHideCount.current) messages.current[lazyHideCount.current].lazyHide = null;
+          forceUpdate();
+        },
+      };
+      updateCount();
+    },
+    handle: (
+      <div className={'message-handle'} style={extraStyle as CSSProperties}>
+        {Object.entries(messages.current).map(([key, e]) => (
+          <Message {...e} key={key} />
         ))}
       </div>
     ),
@@ -382,7 +440,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
       const todo: Record<ActivePageEnum, () => void> = {
         [ActivePageEnum.HomeP]: function (): void {
           load({
-            loadList: homeResource.loadlist,
+            loadList: homeResource.loadList,
             tips: ['test'],
             title: '前往首页',
             onStepCase: {
@@ -395,7 +453,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
               out: [() => activePageSetter(ActivePageEnum.HomeP)],
             },
             onLoaded: async () => {
-              await updateFileCache(homeResource.loadlist);
+              await updateFileCache(homeResource.loadList);
               return;
             },
           });
@@ -432,6 +490,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
     return setSentenceID(nextStoryID << 16);
   }, [currentKeys, setSentenceID, setActivePage]);
   const { add: callDialog, handle: DialogHandle } = useDialogHandle();
+  const { add: callMessage, handle: MessageHandle } = useMessageHandle();
   const { call: callFX, handle: FXhandle } = useFXHandle();
   const getSave = useCallback<PageAction['getSave']>(
     (ID: number) => {
@@ -461,33 +520,51 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
     return dbh.put('Save', save);
   }, []);
   const loadSave = useCallback(
-    async (ID: number, handleClose?: () => void, handleSkipTransfrom?: () => void) => {
-      dbh.get('Save', ID).then((save: DBSave) => {
-        // ...
+    async (ID: number, props: { handleClose?: () => void; handleSkipTransfrom?: () => void; FX?: boolean; force?: boolean }) => {
+      const { handleClose, handleSkipTransfrom, force } = props;
+      const save: DBSave = await dbh.get('Save', ID);
+      if (force) {
+        handleClose?.();
+        const nextSentenceID = save.sentenceID;
+        setSentenceID(nextSentenceID);
+        handleSkipTransfrom &&
+          setTimeout(() => {
+            handleSkipTransfrom?.();
+          }, 100);
+      } else {
         callDialog({
-          text: `确认读取存档 ${save.ID} 吗？`,
+          text: save.ID !== 0 ? `确认读取存档 ${save.ID} 吗？` : `确认读取快速存档吗？`,
           title: '读档确认',
           // onClose: () => alert('close'),
           optionsCallback: {
             读取: () => {
-              const fx = callFX['transition-black-full']();
               const nextSentenceID = save.sentenceID;
-              fx.assignOnStepCase({
-                [FXPhase.keep]: () => {
-                  handleClose?.();
-                  setSentenceID(nextSentenceID);
+              if (currentObjs.story && VN.decodeStaticSentenceID(nextSentenceID).staticStoryID === currentObjs.story.ID) {
+                const fx = callFX['transition-black-full']();
+                fx.assignOnStepCase({
+                  [FXPhase.keep]: () => {
+                    handleClose?.();
+                    setSentenceID(nextSentenceID);
+                    setTimeout(() => {
+                      handleSkipTransfrom?.();
+                      fx.out();
+                    }, 100);
+                  },
+                });
+              } else {
+                handleClose?.();
+                setSentenceID(nextSentenceID);
+                handleSkipTransfrom &&
                   setTimeout(() => {
                     handleSkipTransfrom?.();
-                    fx.out();
                   }, 100);
-                },
-              });
+              }
               return true;
             },
             取消: () => true,
           },
         });
-      });
+      }
     },
     [callDialog, callFX, setSentenceID]
   );
@@ -497,6 +574,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
     setSentenceID,
     jumpToCurrentParagraphEndToStory: jumpToParagraphEndToStory,
     callDialog,
+    callMessage,
     callFX,
     getSave,
     save,
@@ -508,6 +586,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
       <pageActionContext.Provider value={pageAction}>
         {children}
         {DialogHandle}
+        {MessageHandle}
         {FXhandle}
         {/* <SE /> */}
       </pageActionContext.Provider>

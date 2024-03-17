@@ -3,10 +3,7 @@ interface InfoData {
   readStoryPath: string[] | null;
   endedStoryPath: string[] | null;
   options: {} | null;
-  autoSave: {
-    sentenceID: number;
-    text: string;
-  } | null;
+  autoSave: { sentenceID: number; time: number } | null;
   checkKeyMap: Record<string, boolean> | null;
 } // TODO: 完善属性type
 interface InfoData_updateProps {
@@ -16,7 +13,7 @@ interface InfoData_updateProps {
   autoSave: [
     {
       sentenceID: number;
-      text: string;
+      time: number;
     }
   ];
   checkKeyMap: [string, boolean];
@@ -52,7 +49,7 @@ export const updateGlobalSave = (() => {
       Object.assign(data.options, props_0);
       return true;
     },
-    autoSave: function (props_0: { sentenceID: number; text: string }): boolean {
+    autoSave: function (props_0: { sentenceID: number; time: number }): boolean {
       data.autoSave = props_0;
       return true;
     },
@@ -223,4 +220,9 @@ export class Checker {
     } else throw new Error(`Checker构造:参数类型有误。实际为:\n${JSON.stringify(args_0)}`);
     Object.freeze(this);
   }
+}
+
+export function getAutoSave() {
+  if (info.state === 'waiting') return null;
+  return info.data.autoSave;
 }

@@ -135,7 +135,6 @@ export namespace VN {
     // line: string
     charaKey: string;
     text: string;
-    // fns改造: 类型改动
     fns: { anime: [string, fnProps][][]; state: [string, fnProps][] };
     static async getRecordsFromDB(staticStoryID: number) {
       const re = await dbh.getMRange('Sentence', { lower: staticStoryID << 16, upper: (staticStoryID + 1) << 16 }).then((arr) => {
@@ -148,18 +147,8 @@ export namespace VN {
     }
     constructor(ID: number, sentenceLine: string) {
       this.ID = ID;
-      // this.line = sentenceLine
       // fns改造: 读取匹配方式改动
-      // const [charaKey, text, ...fnsStringList] = sentenceLine.slice(1).split('\x1e');
-      // this.charaKey = charaKey;
-      // this.text = text;
-      // this.fns = fnsStringList.map((fnString) => {
-      //   const firstLeftBracketIndex = fnString.indexOf('[');
-      //   const [fnName, propsStr] = [fnString.slice(0, firstLeftBracketIndex), fnString.slice(firstLeftBracketIndex)];
-      //   return [fnName, JSON.parse(propsStr)];
-      // });
-
-      // 改造1:
+      // 改造1: 前面为anime函数组，以分隔符分割阶段；最后一个为state函数组
       const [charaKey, text, ...fnGroupsStringList] = sentenceLine.slice(1).split('\x1e');
       this.charaKey = charaKey;
       this.text = text;
@@ -213,7 +202,6 @@ export namespace VN {
   export function getSentenceNeedFilekeys(staticSentence: StaticSentence): string[] {
     // 获取语句fn需要的资源keys
     if (staticSentence === void 0) throw new Error('getFnsNeedFilekeys(): 传入了空参数');
-    // fns改造: fn名规范
     const map: Record<string, (props: any) => string | null> = {
       place: (props: any[]) => props[0],
       chara: (props: [string, string, string]) => CharaInfo.getPicFilekey(props[0], props[1]),
@@ -221,7 +209,6 @@ export namespace VN {
       BGM: (props: any[]) => props[0],
       voice: (props: any[]) => props[0],
     };
-    // fns改造: 从fns.anime找 done
     return Array.from(
       new Set(
         [

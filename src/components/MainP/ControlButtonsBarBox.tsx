@@ -10,8 +10,10 @@ type HistoryViewProps = {
   mode: MainPMode;
   setMode: React.Dispatch<React.SetStateAction<HistoryViewProps['mode']>>;
   setCoverPage: React.Dispatch<React.SetStateAction<MainPCoverPage>>;
+  handleSkipTransfrom: () => void;
 };
-export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setCoverPage, mode, setMode }) => {
+export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setCoverPage, mode, setMode, handleSkipTransfrom }) => {
+  const { pageAction, pageState } = usePageState();
   const [controlBarDisplay, setControlBarDisplay] = useState(false);
   const [buttonsBarTransforming, setButtonsBarTransforming] = useState(false);
   return (
@@ -26,8 +28,25 @@ export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setCoverPage, mode,
       >
         {(
           [
-            ['保存(施工)', () => setCoverPage('SaveP')],
-            ['读取(施工)'],
+            ['保存', () => setCoverPage('SaveP')],
+            [
+              '快速保存',
+              async () => {
+                const qsave = await pageAction.getSave(0);
+                await pageAction.save(qsave);
+                pageAction.callMessage({
+                  title: '快速保存',
+                  text: '快速保存已完成！',
+                  icon: 'save',
+                });
+              },
+            ],
+            [
+              '快速读取',
+              () => {
+                pageAction.loadSave(0, { handleSkipTransfrom });
+              },
+            ],
             ['设置(施工)'],
             ['快进', () => setMode(mode === 'skip' ? 'default' : 'skip'), [mode === 'skip' ? 'active-skip' : void 0]],
             ['历史', () => setCoverPage('HistroyView')],

@@ -40,17 +40,30 @@ function Test() {
               optionsCallback: {
                 选项1: () => {
                   alert(1);
-                  return !!1;
+                  return true;
                 },
                 选项2: () => {
                   alert(2);
-                  return !!0;
+                  return true;
                 },
               },
             })
           }
         >
           dialog测试
+        </button>
+      }
+
+      {
+        <button
+          onClick={() =>
+            pageAction.callMessage({
+              text: Math.random() + '',
+              title: '提示',
+            })
+          }
+        >
+          message测试
         </button>
       }
       {
