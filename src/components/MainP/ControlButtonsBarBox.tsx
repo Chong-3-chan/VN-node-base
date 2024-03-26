@@ -2,59 +2,31 @@ import { FC, useState } from 'react';
 import { sentenceCache } from '../../data/data';
 import { classNames } from '../../public/handle';
 import { StrokedText } from '../public/StrokedText';
-import { usePageState } from '../../pageState';
+import { ActivePage, usePageState } from '../../pageState';
 import './ControlButtonsBarBox.less';
 import { MainPCoverPage, MainPMode } from '../../pages/MainP';
 
 type HistoryViewProps = {
   mode: MainPMode;
-  setMode: React.Dispatch<React.SetStateAction<HistoryViewProps['mode']>>;
-  setCoverPage: React.Dispatch<React.SetStateAction<MainPCoverPage>>;
-  handleSkipTransfrom: () => void;
+  controlBarFns: [text: string, fn: (() => void) | void, classNamesList?: (string | void)[] | void][];
 };
-export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ setCoverPage, mode, setMode, handleSkipTransfrom }) => {
+export const ControlButtonsBarBox: FC<HistoryViewProps> = ({ mode, controlBarFns }) => {
   const { pageAction, pageState } = usePageState();
-  const [controlBarDisplay, setControlBarDisplay] = useState(false);
+  const [controlBarDisplay, setControlBarDisplay] = useState(true);
   const [buttonsBarTransforming, setButtonsBarTransforming] = useState(false);
   return (
     <div className={classNames('control-btns-bar-box')} data-html2canvas-ignore>
       <div
-        className={classNames('control-btns-bar', controlBarDisplay ? 'display' : 'hide')}
+        className={classNames('control-btns-bar', !controlBarDisplay ? 'hide' : void 0)}
         onTransitionEnd={(e) => {
           if (e.propertyName === 'transform') {
             setButtonsBarTransforming(false);
           }
         }}
       >
-        {(
-          [
-            ['保存', () => setCoverPage('SaveP')],
-            [
-              '快速保存',
-              async () => {
-                const qsave = await pageAction.getSave(0);
-                await pageAction.save(qsave);
-                pageAction.callMessage({
-                  title: '快速保存',
-                  text: '快速保存已完成！',
-                  icon: 'save',
-                });
-              },
-            ],
-            [
-              '快速读取',
-              () => {
-                pageAction.loadSave(0, { handleSkipTransfrom });
-              },
-            ],
-            ['设置(施工)'],
-            ['快进', () => setMode(mode === 'skip' ? 'default' : 'skip'), [mode === 'skip' ? 'active-skip' : void 0]],
-            ['历史', () => setCoverPage('HistroyView')],
-            ['自动', () => setMode(mode === 'auto' ? 'default' : 'auto'), [mode === 'auto' ? 'active-auto' : void 0]],
-          ] as [text: string, fn?: () => void, classNamesList?: string[]][]
-        ).map(([text, fn, classNamesList], i) => {
+        {controlBarFns.map(([text, fn, classNamesList], i) => {
           return (
-            <div className={classNames('btn', ...(classNamesList ?? []))} key={i} onClick={fn}>
+            <div className={classNames('btn', ...(classNamesList ?? []))} key={i} onClick={fn!}>
               <StrokedText text={text} frontColor="#ffeeff" backColor="#ffeeff33"></StrokedText>
             </div>
           );

@@ -2,17 +2,17 @@ import { useState, type FC, useMemo, useLayoutEffect, useReducer, useRef, useEff
 import { dbh } from '../../public/handle/IndexedDB';
 import { DBSave, usePageState } from '../../pageState';
 import { classNames } from '../../public/handle';
-import { MainPCoverPage, MainPMode } from '../../pages/MainP';
+import { MainPCoverPage } from '../../pages/MainP';
 import './SaveP.less';
 import { StrokedText } from './StrokedText';
 import { HomePCoverPage } from '../../pages/HomeP';
 type SavePProps = {
   coverPage: MainPCoverPage | HomePCoverPage;
   setCoverPage: React.Dispatch<React.SetStateAction<MainPCoverPage>> | React.Dispatch<React.SetStateAction<HomePCoverPage>>;
-  setMode?: React.Dispatch<React.SetStateAction<MainPMode>>;
+  // setMode?: React.Dispatch<React.SetStateAction<MainPMode>>;
   handleLoadSave: (ID: number) => void;
 };
-export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handleLoadSave }) => {
+export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, handleLoadSave }) => {
   const { pageState, pageAction } = usePageState();
   const display = coverPage === 'SaveP';
   const [pageNo, setPageNo] = useState(0);
@@ -27,20 +27,20 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
       }, 500);
     }
   }, [pageTurning]);
-  const [seletedSaveNo, setSeletedSaveNo] = useState(-1);
+  const [selectedSaveNo, setSelectedSaveNo] = useState(-1);
   // todo: 需要预览存档吗？
   const [data, setData] = useState<DBSave[] | null>(null);
   const [refreshValue, refresh] = useReducer((e) => {
-    setSeletedSaveNo(-1);
+    setSelectedSaveNo(-1);
     return e + 1;
   }, 0);
   useLayoutEffect(() => {
     setPageNo(0);
-    setSeletedSaveNo(-1);
+    setSelectedSaveNo(-1);
   }, [display]);
   useLayoutEffect(() => {
     if (display) {
-      setMode?.('default');
+      // setMode?.('default');
       dbh.getAll('Save').then((e: DBSave[]) => {
         //   console.log(e);
         const readData: DBSave[] = [];
@@ -51,8 +51,8 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
       });
     }
   }, [refreshValue, display]);
-  const lastSaveSeletorInnerRef = useRef<JSX.Element[]>(null!);
-  const saveSeletorInner = useMemo(() => {
+  const lastSaveSelectorInnerRef = useRef<JSX.Element[]>(null!);
+  const saveSelectorInner = useMemo(() => {
     const pageData: (DBSave | void)[] = Array(8).fill(void 0);
     if (data !== null) {
       pageData.forEach((e, i) => {
@@ -66,11 +66,11 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
         if (e === void 0)
           return (
             <div
-              className={classNames('save-item', 'quick-save', seletedSaveNo === 0 ? 'selected' : void 0)}
+              className={classNames('save-item', 'quick-save', selectedSaveNo === 0 ? 'selected' : void 0)}
               key={0}
               onClick={(e) => {
                 e.stopPropagation();
-                setSeletedSaveNo(0);
+                setSelectedSaveNo(0);
               }}
             >
               <div className="body">
@@ -81,11 +81,11 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
         else
           return (
             <div
-              className={classNames('save-item', 'quick-save', seletedSaveNo === 0 ? 'selected' : void 0)}
+              className={classNames('save-item', 'quick-save', selectedSaveNo === 0 ? 'selected' : void 0)}
               key={0}
               onClick={(e) => {
                 e.stopPropagation();
-                setSeletedSaveNo(0);
+                setSelectedSaveNo(0);
               }}
             >
               <div className="header">
@@ -106,7 +106,7 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
               </div>
               <div className="body">
                 <div className="capture">
-                  <img src={e.capture} />
+                  <img draggable={false} src={e.capture} />
                 </div>
                 <div className="text-lines">
                   <p className="chara-name">{e.charaName}</p>
@@ -133,13 +133,13 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
         ID = pageNo * 8 + i;
         return (
           <div
-            className={classNames('save-item', seletedSaveNo === ID ? 'selected' : void 0)}
+            className={classNames('save-item', selectedSaveNo === ID ? 'selected' : void 0)}
             key={ID}
             onClick={
               isMainP
                 ? (e) => {
                     e.stopPropagation();
-                    setSeletedSaveNo(ID);
+                    setSelectedSaveNo(ID);
                   }
                 : void 0
             }
@@ -169,11 +169,11 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
         // 槽位已有存档
         return (
           <div
-            className={classNames('save-item', seletedSaveNo === ID ? 'selected' : void 0)}
+            className={classNames('save-item', selectedSaveNo === ID ? 'selected' : void 0)}
             key={ID}
             onClick={(e) => {
               e.stopPropagation();
-              setSeletedSaveNo(ID);
+              setSelectedSaveNo(ID);
             }}
           >
             <div className="header">
@@ -197,7 +197,7 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
             </div>
             <div className="body">
               <div className="capture">
-                <img src={e.capture} />
+                <img draggable={false} src={e.capture} />
               </div>
               <div className="text-lines">
                 <p className="chara-name">{e.charaName}</p>
@@ -224,19 +224,19 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
         );
       }
     });
-  }, [data, pageNo, seletedSaveNo]);
+  }, [data, pageNo, selectedSaveNo]);
   useEffect(() => {
-    if (!pageTurning) lastSaveSeletorInnerRef.current = saveSeletorInner;
+    if (!pageTurning) lastSaveSelectorInnerRef.current = saveSelectorInner;
   }, [pageTurning]);
-  const pageSeletotInner = useMemo(
+  const pageSelectotInner = useMemo(
     () =>
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].map((e) => [
         <div
-          className={classNames('page-seletor-item', pageNo === e ? 'selected' : void 0)}
+          className={classNames('page-selector-item', pageNo === e ? 'selected' : void 0)}
           onClick={() => {
             setPageTurning(true);
             setPageNo(e);
-            setSeletedSaveNo(-1);
+            setSelectedSaveNo(-1);
           }}
           key={e}
         >
@@ -289,13 +289,13 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, setMode, handle
   return (
     <div className={classNames('SaveP', display ? void 0 : 'hide')} data-html2canvas-ignore>
       <div
-        className={classNames('save-seletor', pageTurning ? 'hide' : void 0)}
+        className={classNames('save-selector', pageTurning ? 'hide' : void 0)}
         onTransitionEnd={pageTurning ? () => setPageTurning(false) : void 0}
-        onClick={() => setSeletedSaveNo(-1)}
+        onClick={() => setSelectedSaveNo(-1)}
       >
-        {pageTurning ? lastSaveSeletorInnerRef.current : saveSeletorInner}
+        {pageTurning ? lastSaveSelectorInnerRef.current : saveSelectorInner}
       </div>
-      <div className="page-seletor">{pageSeletotInner}</div>
+      <div className="page-selector">{pageSelectotInner}</div>
       {/* <div className="save-detail"></div> */}
 
       <div className="header-btns-bar">

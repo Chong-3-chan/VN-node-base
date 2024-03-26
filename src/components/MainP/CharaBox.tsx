@@ -289,7 +289,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
                 else if (charaBoxPhase === CharaBoxPhase.move) handleAnimationEnd('move', k, moveCount);
               }}
             >
-              <img src={last} />
+              <img draggable={false} src={last} />
             </div>
             <div
               className={classNames(
@@ -310,7 +310,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
                 else if (charaBoxPhase === CharaBoxPhase.transform) handleAnimationEnd('transform', k);
               }}
             >
-              <img src={cover} />
+              <img draggable={false} src={cover} />
             </div>
           </Fragment>
         );

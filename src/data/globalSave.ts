@@ -1,15 +1,16 @@
+import { options_FULL, optionsdefaultValues } from './options';
 type InfoState = 'waiting' | 'done';
 interface InfoData {
   readStoryPath: string[] | null;
   endedStoryPath: string[] | null;
-  options: {} | null;
+  options: Partial<options_FULL> | null;
   autoSave: { sentenceID: number; time: number } | null;
   checkKeyMap: Record<string, boolean> | null;
 } // TODO: 完善属性type
 interface InfoData_updateProps {
   readStoryPath: [string];
   endedStoryPath: [string];
-  options: [{}];
+  options: [Partial<options_FULL>];
   autoSave: [
     {
       sentenceID: number;
@@ -18,6 +19,7 @@ interface InfoData_updateProps {
   ];
   checkKeyMap: [string, boolean];
 }
+
 const info: { state: InfoState; data: InfoData } = {
   state: 'waiting',
   data: {
@@ -32,28 +34,28 @@ const info: { state: InfoState; data: InfoData } = {
 export const updateGlobalSave = (() => {
   const { data } = info;
   const todo: { [key in keyof InfoData_updateProps]: (...props: InfoData_updateProps[key]) => boolean } = {
-    readStoryPath: function (storyPath: string): boolean {
+    readStoryPath: function (storyPath) {
       if (!data.readStoryPath) data.readStoryPath = [];
       if (data.readStoryPath.includes(storyPath)) return false;
       data.readStoryPath.push(storyPath);
       return true;
     },
-    endedStoryPath: function (storyPath: string): boolean {
+    endedStoryPath: function (storyPath) {
       if (!data.endedStoryPath) data.endedStoryPath = [];
       if (data.endedStoryPath.includes(storyPath)) return false;
       data.endedStoryPath.push(storyPath);
       return true;
     },
-    options: function (props_0: {}): boolean {
+    options: function (props_0) {
       if (!data.options) data.options = {};
       Object.assign(data.options, props_0);
       return true;
     },
-    autoSave: function (props_0: { sentenceID: number; time: number }): boolean {
+    autoSave: function (props_0) {
       data.autoSave = props_0;
       return true;
     },
-    checkKeyMap: function (props_0: string, props_1: boolean): boolean {
+    checkKeyMap: function (props_0, props_1) {
       if (!data.checkKeyMap) data.checkKeyMap = {};
       if (data.checkKeyMap[props_0] === props_1) return false;
       data.checkKeyMap[props_0] = props_1;
@@ -68,9 +70,9 @@ export const updateGlobalSave = (() => {
       callbackID = null;
     });
   }
-  return function updateGlobalSave<T extends keyof typeof info.data>(key: T, ...props: InfoData_updateProps[T]) {
+  return function <T extends keyof typeof info.data>(key: T, ...props: InfoData_updateProps[T]) {
     todo[key](...props) && update();
-    // console.log('VN-global-save updated', info.data);
+    console.log('VN-global-save updated', info.data);
   };
 })();
 // 同步读取，存在localStorage里
@@ -91,8 +93,6 @@ try {
 }
 console.log('VN-global-save', info.data);
 info.state = 'done';
-
-// export get
 
 export type StoryCheckerMode = '&' | '|' | '!';
 type CheckerType = 'key' | '&' | '|' | '!';
@@ -118,7 +118,10 @@ type CheckerConstructorPropsHandleType<T extends StoryCheckerMode> = {
   '|': [StoryCheckerMode, readonly string[], readonly string[]];
   '!': [];
 }[T];
-export type CheckerConstructorProps<T extends StoryCheckerMode> = [T, CheckerConstructorPropsHandleType<T>, CheckerConstructorPropsHandleType<T>];
+export type CheckerConstructorProps<T extends StoryCheckerMode> =
+  | [T, CheckerConstructorPropsHandleType<T>, CheckerConstructorPropsHandleType<T>]
+  | [];
+const NOCHECK = Object.freeze({ mode: '!', some: null, all: null });
 export class Checker {
   type: CheckerType;
   read?: { mode: StoryCheckerMode; some: readonly string[] | null; all: readonly string[] | null };
@@ -197,26 +200,32 @@ export class Checker {
       const keyName = args_0;
       this.type = 'key';
       this.checkKeyName = keyName;
-    } else if (Array.isArray(args_0) && args_0.length === 3 && ['&', '|', '!'].includes(args_0[0])) {
-      const readAndEndedConfig = args_0;
-      const [type, readConfig, endedConfig] = readAndEndedConfig;
-      this.type = type;
-      this.read =
-        readConfig.length === 0
-          ? Object.freeze({ mode: '!', some: null, all: null })
-          : Object.freeze({
-              mode: readConfig[0] as StoryCheckerMode,
-              some: Object.freeze(readConfig[1]),
-              all: Object.freeze(readConfig[2]),
-            });
-      this.ended =
-        endedConfig.length === 0
-          ? Object.freeze({ mode: '!', some: null, all: null })
-          : Object.freeze({
-              mode: endedConfig[0] as StoryCheckerMode,
-              some: Object.freeze(endedConfig[1]),
-              all: Object.freeze(endedConfig[2]),
-            });
+    } else if (Array.isArray(args_0)) {
+      if (args_0.length === 3 && ['&', '|', '!'].includes(args_0[0])) {
+        const readAndEndedConfig = args_0;
+        const [type, readConfig, endedConfig] = readAndEndedConfig;
+        this.type = type;
+        this.read =
+          readConfig.length === 0
+            ? NOCHECK
+            : Object.freeze({
+                mode: readConfig[0] as StoryCheckerMode,
+                some: Object.freeze(readConfig[1]),
+                all: Object.freeze(readConfig[2]),
+              });
+        this.ended =
+          endedConfig.length === 0
+            ? NOCHECK
+            : Object.freeze({
+                mode: endedConfig[0] as StoryCheckerMode,
+                some: Object.freeze(endedConfig[1]),
+                all: Object.freeze(endedConfig[2]),
+              });
+      } else if (args_0.length === 0) {
+        this.type = '!';
+        this.read = NOCHECK;
+        this.ended = NOCHECK;
+      } else throw new Error(`Checker构造:参数类型有误。实际为:\n${JSON.stringify(args_0)}`);
     } else throw new Error(`Checker构造:参数类型有误。实际为:\n${JSON.stringify(args_0)}`);
     Object.freeze(this);
   }
@@ -226,3 +235,11 @@ export function getAutoSave() {
   if (info.state === 'waiting') return null;
   return info.data.autoSave;
 }
+
+export function getOptions(): options_FULL {
+  if (info.state === 'waiting') return optionsdefaultValues;
+  return Object.assign({ ...optionsdefaultValues }, info.data.options);
+}
+// (window as any).getOptions = getOptions;
+(window as any).updateGlobalSave = updateGlobalSave;
+(window as any).Checker = Checker;

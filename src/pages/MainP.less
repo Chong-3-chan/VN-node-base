@@ -21,7 +21,7 @@
 .header-btns-bar {
   position: absolute;
   // left: 0;
-  // top: 0;
+  top: 0;
   z-index: 200;
   width: 2rem;
   margin-left: 14rem;
@@ -30,16 +30,21 @@
   margin-top: 0.2rem;
   display: flex;
   flex-direction: row-reverse;
+  flex: auto;
   gap: 0.2rem;
 
   .close {
     mask-image: url('@{img}/close.svg');
     mask-size: auto 125%;
     mask-position: center;
-    background-color: rgba(232, 232, 232, 0.8);
+    background-color: rgba(232, 232, 232, 0.2);
+    transition: background-color 0.2s;
     height: 0.5rem;
     width: 0.5rem;
     border-radius: 0.1rem;
     cursor: pointer;
+    &:hover {
+      background-color: rgba(232, 232, 232, 0.8);
+    }
   }
 }

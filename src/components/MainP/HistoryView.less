@@ -29,7 +29,7 @@
       width: 12rem;
       overflow-y: auto;
       padding: 0 0.02rem;
-      font-size: 90%;
+      font-size: .28rem;
       mask-image: linear-gradient(to bottom, transparent, #fff 0.2rem, #fff calc(100% - 0.2rem), transparent 100%);
       padding: 0.2rem 0;
       box-sizing: border-box;
@@ -53,6 +53,12 @@
         flex-direction: column;
         justify-content: flex-start;
         gap: 0.0275rem;
+        &:empty::after {
+          content: '- 没有记录 -';
+          line-height: 8.6rem;
+          text-align: center;
+          color: #eee8e0;
+        }
         & > .history-item {
           min-height: 0.7rem;
           position: relative;

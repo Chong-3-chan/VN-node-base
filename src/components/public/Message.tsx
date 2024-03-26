@@ -8,11 +8,11 @@ export type MessageProps = {
   text: string;
   icon?: MessageIcon;
   onClick?: () => void;
-  // cb返回true则关闭（执行destory），否则不关闭
+  // cb返回true则关闭（执行destroy），否则不关闭
 };
 const lazyHideDelay = 1500;
-export type MessagePropsRuntime = MessageProps & { destory: () => void; lazyHide: (() => void) | null };
-export const Message: FC<MessagePropsRuntime> = ({ title, text, icon, onClick, lazyHide, destory }) => {
+export type MessagePropsRuntime = MessageProps & { destroy: () => void; lazyHide: (() => void) | null };
+export const Message: FC<MessagePropsRuntime> = ({ title, text, icon, onClick, lazyHide, destroy }) => {
   const time = useMemo(() => Date.now(), []);
   useEffect(() => {
     setTimeout(() => lazyHide!(), lazyHideDelay);
@@ -21,7 +21,7 @@ export const Message: FC<MessagePropsRuntime> = ({ title, text, icon, onClick, l
     <div
       className={classNames('message', lazyHide === null ? 'hide' : void 0)}
       onClick={onClick}
-      onTransitionEnd={lazyHide === null ? () => destory?.() : void 0}
+      onTransitionEnd={lazyHide === null ? () => destroy?.() : void 0}
     >
       <div className={classNames('icon', icon)}></div>
       <div className="title">{title}</div>

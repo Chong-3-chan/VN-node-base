@@ -19,6 +19,7 @@ import {
   KKVRecord,
   charaRecord,
   homeResource,
+  infoRecord,
   sentenceCache,
   staticBookRecord,
   staticStoryRecord,
@@ -34,10 +35,7 @@ import './FX.less';
 import { dbh } from './public/handle/IndexedDB';
 import { Message, MessageProps, MessagePropsRuntime } from './components/public/Message';
 
-export enum ActivePageEnum {
-  HomeP = 'HomeP',
-  MainP = 'MainP',
-}
+export type ActivePage = 'HomeP' | 'MainP' | 'InfoP';
 export type DBSave = {
   ID: number; // 0~255 0为自动存档
   sentenceID: number;
@@ -48,7 +46,7 @@ export type DBSave = {
 };
 type PageState = {
   initDone: boolean;
-  activePage: ActivePageEnum | null;
+  activePage: ActivePage | null;
   LoadingPProps: LoadingPProps | null;
   isLoadingPActing: boolean;
   sentenceID: number | null;
@@ -79,7 +77,7 @@ type PageState = {
 };
 type PageAction = {
   load: (args: PageState['LoadingPProps']) => void;
-  setActivePage: (nextActivePage: ActivePageEnum, sentenceID?: number) => void;
+  setActivePage: (nextActivePage: ActivePage, sentenceID?: number) => void;
   setSentenceID: (nextSentenceID: number) => Promise<void>;
   jumpToCurrentParagraphEndToStory: () => Promise<void>;
   callDialog: (props: DialogProps) => void;
@@ -87,7 +85,7 @@ type PageAction = {
   callFX: ReturnType<typeof useFXHandle>['call'];
   getSave: (ID: number) => Promise<DBSave>;
   save: (save: DBSave) => Promise<any>;
-  loadSave: (ID: number, props: { handleClose?: () => void; handleSkipTransfrom?: () => void; force?: boolean }) => void;
+  loadSave: (ID: number, props: { handleClose?: () => void; handleSkipTransfrom?: () => void; force?: boolean }) => Promise<void>;
 };
 // function getHomePLoadList(): string[] {
 //   const BGM = homeResource.BGM;
@@ -104,7 +102,7 @@ const pageStateInit: PageState = (() => {
   const getLoadList = () => homeResource.loadList;
   return {
     initDone: false,
-    activePage: ActivePageEnum.HomeP,
+    activePage: 'HomeP',
     LoadingPProps: {
       get loadList() {
         return getLoadList();
@@ -150,7 +148,7 @@ const useDialogHandle = function () {
     add: (dialogProps: DialogProps) => {
       dialogs.current[count] = {
         ...dialogProps,
-        destory() {
+        destroy() {
           delete dialogs.current[count];
           forceUpdate();
         },
@@ -175,12 +173,12 @@ const useMessageHandle = function () {
     //     messages.current[0].hide = null;
     //     forceUpdate();
     //   },
-    //   destory: () => {
+    //   destroy: () => {
     //     delete messages.current[0];
     //     forceUpdate();
     //   },
     // },
-    // 1: { title: '123', text: '123', hide: null, destory: () => {} },
+    // 1: { title: '123', text: '123', hide: null, destroy: () => {} },
   });
   const [, forceUpdate] = useReducer((e) => e + 1, 0);
   const [count, updateCount] = useReducer((e) => e + 1, 0);
@@ -203,7 +201,7 @@ const useMessageHandle = function () {
             forceUpdate();
           }
         },
-        destory() {
+        destroy() {
           delete messages.current[count];
           lazyHideCount.current = Math.max(lazyHideCount.current, count + 1);
           if (lazyHideCountMax.current >= lazyHideCount.current) messages.current[lazyHideCount.current].lazyHide = null;
@@ -324,7 +322,10 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
   const [initDone, initDoneSetter] = useState<PageState['initDone']>(pageStateInit.initDone);
   const [activePage, activePageSetter] = useState<PageState['activePage']>(pageStateInit.activePage);
   const [LoadingPProps, LoadingPPropsSetter] = useState<PageState['LoadingPProps']>(() => {
-    if (!initFlag) ((pageStateInit.LoadingPProps!.onStepCase ??= {}).out ??= []).push(() => initDoneSetter((initFlag = true)));
+    if (!initFlag)
+      ((pageStateInit.LoadingPProps!.onStepCase ??= {}).out ??= []).push(() => {
+        initDoneSetter((initFlag = true));
+      });
     return pageStateInit.LoadingPProps;
   });
   const [sentenceID, sentenceIDSetter] = useState<PageState['sentenceID']>(pageStateInit.sentenceID);
@@ -332,8 +333,9 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
     if (sentenceID === null) {
       return pageStateInit.currentKeys;
     } else {
-      const bookKey = Book_KeyIDEnum[sentenceID >> 24];
-      const storyKey = staticBookRecord[bookKey].Story_KeyIDEnum[sentenceID >> 16];
+      const { staticBookID, staticStoryID } = VN.decodeStaticSentenceID(sentenceID);
+      const bookKey = Book_KeyIDEnum[staticBookID];
+      const storyKey = staticBookRecord[bookKey].Story_KeyIDEnum[staticStoryID];
       const paragraphKey = Object.values(staticStoryRecord[storyKey].paragraphRecord).find(
         ({ start, end }) => sentenceID >= start && sentenceID <= end
       )!.key;
@@ -414,7 +416,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
         title: nextStory.title,
         onStepCase: {
           loading: [() => activePageSetter(null)],
-          out: [() => activePageSetter(ActivePageEnum.MainP)],
+          out: [() => activePageSetter('MainP')],
         },
         onLoaded: async () => {
           sentenceCache.clear();
@@ -436,9 +438,9 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
     [load, sentenceID]
   );
   const setActivePage = useCallback<PageAction['setActivePage']>(
-    (nextActivePage: ActivePageEnum, staticSentenceID?: number) => {
-      const todo: Record<ActivePageEnum, () => void> = {
-        [ActivePageEnum.HomeP]: function (): void {
+    (nextActivePage: ActivePage, staticSentenceID?: number) => {
+      const todo: Record<ActivePage, () => void> = {
+        ['HomeP']: function (): void {
           load({
             loadList: homeResource.loadList,
             tips: ['test'],
@@ -450,16 +452,32 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
                   sentenceIDSetter(null);
                 },
               ],
-              out: [() => activePageSetter(ActivePageEnum.HomeP)],
+              out: [() => activePageSetter('HomeP')],
             },
-            onLoaded: async () => {
-              await updateFileCache(homeResource.loadList);
-              return;
-            },
+            onLoaded: () => updateFileCache(homeResource.loadList),
           });
         },
-        [ActivePageEnum.MainP]: async function (): Promise<void> {
+        ['MainP']: function (): void {
           setSentenceID(staticSentenceID ?? 0);
+        },
+        ['InfoP']: function (): void {
+          const loadList = [
+            ...homeResource.loadList,
+            ...Object.values(infoRecord)
+              .filter((e) => e.checker.check())
+              .map((e) => e.data.filter((e) => e[0] === 'pic').map((e) => e[1]))
+              .flat(1),
+          ];
+          load({
+            loadList,
+            tips: ['test'],
+            title: '前往档案',
+            onStepCase: {
+              loading: [() => activePageSetter(null)],
+              out: [() => activePageSetter('InfoP')],
+            },
+            onLoaded: () => updateFileCache(loadList),
+          });
         },
       };
       todo[nextActivePage]();
@@ -477,7 +495,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
       if (endText === void 0) throw new Error(`异常的book(${currentKeys.book})结束于story: ${currentKeys.story}`);
       else {
         alert(endText);
-        setActivePage(ActivePageEnum.HomeP);
+        setActivePage('HomeP');
         return Promise.resolve();
       }
     }
@@ -505,6 +523,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
         capture: '',
       };
       re.charaName.length !== 0 && (re.text = `“${re.text}”`);
+      // 截个图当存档封面
       return html2canvas(MainP, { scale: 400 / MainP.offsetWidth, backgroundColor: null }).then((canvas) => {
         re.capture = canvas.toDataURL();
         re.time = Date.now();
@@ -545,6 +564,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
                   [FXPhase.keep]: () => {
                     handleClose?.();
                     setSentenceID(nextSentenceID);
+
                     setTimeout(() => {
                       handleSkipTransfrom?.();
                       fx.out();
@@ -554,6 +574,7 @@ export const PageStateProvider: FC<PropsWithChildren<{ parentRef: React.MutableR
               } else {
                 handleClose?.();
                 setSentenceID(nextSentenceID);
+
                 handleSkipTransfrom &&
                   setTimeout(() => {
                     handleSkipTransfrom?.();
@@ -599,8 +620,8 @@ const pageActionCurrent: any = {};
 export function usePageState() {
   const pageState = useContext(pageStateContext);
   const pageAction = useContext(pageActionContext);
-  (window as any).pageState = pageState;
-  (window as any).pageAction = pageAction;
+  // (window as any).pageState = pageState;
+  // (window as any).pageAction = pageAction;
   Object.entries(pageState).forEach(([k, v]) => pageStateCurrent[k] !== v && (pageStateCurrent[k] = v));
   Object.entries(pageAction).forEach(([k, v]) => pageActionCurrent[k] !== v && (pageActionCurrent[k] = v));
   return { pageState: pageStateCurrent as PageState, pageAction: pageActionCurrent as PageAction, PageStateProvider };

@@ -70,7 +70,7 @@ export const ContentP: FC<ContentPProps> = ({ coverPage, setCoverPage }) => {
                     }}
                     key={key}
                   >
-                    <img src={getSrc(cover)} alt={key}></img>
+                    <img draggable={false} src={getSrc(cover)} alt={key}></img>
                   </div>
                 );
               })}

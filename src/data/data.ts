@@ -1,5 +1,5 @@
 import type { VN } from '../class/Book';
-import type { CharaInfo, FileInfo, PackageInfo, TipsGroup } from '../class/Records';
+import type { CharaInfo, FileInfo, InfoItem, PackageInfo, TipsGroup } from '../class/Records';
 import { Checker } from './globalSave';
 
 // key-value(includes key)
@@ -17,6 +17,7 @@ export const packageRecord = new KKVRecord<PackageInfo>();
 export const fileRecord = new KKVRecord<FileInfo>();
 export const charaRecord = new KKVRecord<CharaInfo>();
 export const tipsGroupRecord = new KKVRecord<TipsGroup>();
+export const infoRecord = new KKVRecord<InfoItem>();
 
 export const Book_KeyIDEnum: VN.KeyIDEnum = {};
 // Book_KeyIDEnum在StaticBook构造时被填充

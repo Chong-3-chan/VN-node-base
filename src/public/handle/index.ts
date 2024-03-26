@@ -1,7 +1,18 @@
 export function classNames(...list: (string | void)[]) {
   return list.filter(Boolean).join(' ');
 }
-
+export const QsaveloadThrottle = ((delay = 1000) => {
+  let timeout: NodeJS.Timeout | null = null;
+  return (fn: () => any): ReturnType<typeof fn> => {
+    if (timeout) return;
+    else {
+      timeout = setTimeout(() => {
+        timeout = null;
+      }, delay);
+      return fn();
+    }
+  };
+})();
 function getDeepCloneMain() {
   const cache = new Map();
   const main = function (val: any) {

@@ -1,0 +1,109 @@
+.InfoP {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
+}
+.InfoP .background {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  filter: blur(0.1rem) brightness(0.5);
+  & > img {
+    background-color: transparent;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+.InfoP .info-selector {
+  position: relative;
+  width: 4.2rem;
+  height: 8rem;
+  box-sizing: border-box;
+  padding-inline: 0.1rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 0.05rem;
+}
+.InfoP .info-selector::-webkit-scrollbar {
+  width: 0.1rem;
+  background-color: transparent;
+}
+
+.InfoP .info-selector::-webkit-scrollbar-thumb {
+  background: rgba(192, 192, 192, 0.2);
+  border-radius: 0.1rem;
+}
+.InfoP .info-selector > .info-selector-item {
+  box-sizing: border-box;
+  width: 4rem;
+  height: 1rem;
+  padding: 0.3rem;
+  font-size: 0.3rem;
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  margin-block: 0.2rem;
+  border-top: 0.005rem solid rgba(192, 192, 192, 0.5);
+  border-bottom: 0.005rem solid rgba(192, 192, 192, 0.5);
+}
+.InfoP .info-selector > .info-selector-item.selected {
+  background-color: rgba(127, 255, 255, 0.2);
+}
+.InfoP .info-read {
+  position: relative;
+  width: 10rem;
+  height: 8rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.InfoP .info-read::-webkit-scrollbar {
+  width: 0.1rem;
+  background-color: transparent;
+}
+
+.InfoP .info-read::-webkit-scrollbar-thumb {
+  background: rgba(192, 192, 192, 0.2);
+  border-radius: 0.1rem;
+}
+.InfoP .info-read .pic {
+  width: 10rem;
+  /* height: 7rem; */
+  margin-block: 0.4rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.InfoP .info-read .title {
+  margin-inline: 0.5rem;
+  backdrop-filter: blur(0.1rem) opacity(0.95);
+  padding-bottom: 0.05rem;
+  font-size: 0.5rem;
+  padding-top: 0.2rem;
+  // margin-top: 0.2rem;
+  border-bottom: 0.005rem solid white;
+  position: sticky;
+  top: 0;
+  width: 9rem;
+}
+.InfoP .info-read .text {
+  padding-inline: 0.5rem;
+  text-indent: 2em;
+  font-size: 0.24rem;
+}
+.InfoP .info-read .pic > img {
+  max-width: 8.5rem;
+  max-height: 8.5rem;
+}
+.InfoP .info-selector,
+.InfoP .info-read {
+  /* width: 6.2rem; */
+  background-color: #8888;
+  animation: fade-in 0.5s ease forwards;
+}

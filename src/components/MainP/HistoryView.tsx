@@ -16,16 +16,15 @@ type HistoryViewProps = {
 export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, handleGoNextSentence, handleSkipTransfrom, setMode }) => {
   const { pageAction, pageState } = usePageState();
   const [display, setDisplay] = useState(false);
-  const histroyViewCache = useRef<EXStaticSentence[] | null>(null);
+  const historyViewCache = useRef<EXStaticSentence[] | null>(null);
   const historyViewBoxRef = useRef<HTMLDivElement | null>(null);
   // const jumpFXFns = useRef<any>();
   useEffect(() => {
-    if (coverPage === 'HistroyView') {
+    if (coverPage === 'HistoryView') {
       requestAnimationFrame(() => {
         historyViewBoxRef.current && (historyViewBoxRef.current.scrollTop = historyViewBoxRef.current.scrollHeight);
       });
-      setMode('default');
-      histroyViewCache.current = [
+      historyViewCache.current = [
         pageState.currentObjs
           .paragraph!.source.map((paragraphKey) => {
             const { start, end } = pageState.currentObjs.story!.paragraphRecord[paragraphKey];
@@ -43,46 +42,46 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
   const handleClose = () => {
     setDisplay(false);
     setCoverPage(null);
-    histroyViewCache.current = null;
+    setTimeout(() => {
+      historyViewCache.current = null;
+    }, 500);
   };
+  const historyList = historyViewCache.current ?? [];
   return (
     <div className={classNames('history-view', display ? void 0 : 'hide')} data-html2canvas-ignore>
       <div className="history-view-box" ref={historyViewBoxRef}>
         <div className="history-list">
-          {(histroyViewCache.current ?? [])!.map((e: EXStaticSentence) => (
+          {historyList.map((e: EXStaticSentence) => (
             <div className="history-item" key={e.ID}>
               <div className="header">
                 <div className="history-btns-bar">
-                  {true && ( // 始终显示吗？
-                    <div
-                      className={classNames('btn', 'jump-to')}
-                      onClick={() => {
-                        pageAction.callDialog({
-                          text: '跳转将会丢失未存档的阅读进度！\n请问确认跳转吗？',
-                          title: '提示',
-                          // onClose: () => alert('close'),
-                          optionsCallback: {
-                            跳转: () => {
-                              const fx = pageAction.callFX['transition-black-full']();
-                              const nextSentenceID = e.ID;
-                              fx.assignOnStepCase({
-                                [FXPhase.keep]: () => {
-                                  handleClose();
-                                  handleGoNextSentence(nextSentenceID, true);
-                                  setTimeout(() => {
-                                    handleSkipTransfrom();
-                                    fx.out();
-                                  }, 100);
-                                },
-                              });
-                              return true;
-                            },
-                            取消: () => true,
+                  <div
+                    className={classNames('btn', 'jump-to')}
+                    onClick={() => {
+                      pageAction.callDialog({
+                        text: '跳转将会丢失未存档的阅读进度！\n请问确认跳转吗？',
+                        title: '提示',
+                        optionsCallback: {
+                          跳转: () => {
+                            const fx = pageAction.callFX['transition-black-full']();
+                            const nextSentenceID = e.ID;
+                            fx.assignOnStepCase({
+                              [FXPhase.keep]: () => {
+                                handleClose();
+                                handleGoNextSentence(nextSentenceID, true);
+                                setTimeout(() => {
+                                  handleSkipTransfrom();
+                                  fx.out();
+                                }, 100);
+                              },
+                            });
+                            return true;
                           },
-                        });
-                      }}
-                    ></div>
-                  )}
+                          取消: () => true,
+                        },
+                      });
+                    }}
+                  ></div>
                   {e.lastState?.voice && <div className={classNames('btn', 'voice')}></div>}
                 </div>
                 <div className="chara-name">

@@ -1,7 +1,7 @@
-import { resourceBasePath } from '../config';
-import { fileRecord, packageRecord, charaRecord, KKVRecord, fileCache } from '../data/data';
+import { fileRecord, charaRecord, KKVRecord, fileCache } from '../data/data';
+import { Checker } from '../data/globalSave';
 import { dbh } from '../public/handle/IndexedDB';
-import { WorkerHandle, WorkerMessage, Worker_getZip } from '../worker/WorkerHandle';
+import { WorkerHandle, Worker_getZip } from '../worker/WorkerHandle';
 import * as GetZip from '../worker/getZip.export';
 
 export type FileType = 'application' | 'image' | 'audio' | 'unknow';
@@ -311,5 +311,21 @@ export class TipsGroup {
   }
 }
 /******************************* TipsGroup END ********************************/
+
+export class InfoItem {
+  key: string;
+  title: string;
+  checker: Checker;
+  data: [string, string][];
+  order: number;
+  constructor(key: string, props: { title: string; check: any; order: number; data: [string, string][] }) {
+    const { title, data, order, check } = props;
+    this.key = key;
+    this.title = title;
+    this.data = data;
+    this.order = order;
+    this.checker = new Checker(check);
+  }
+}
 
 // PackageInfo.createPackageInfo('pk1','/package/home_SAMPLE.zip',{'_H_BG_0':'bg_0.png','_H_BG_1':'bg_1.png','_H_LOGO':'霂LOGO.png','_H_TITLE':'_h_title.png'}).load({})

@@ -3,7 +3,8 @@
   position: absolute;
   height: 100%;
   width: 100%;
-  --step-a-delay: 0.1s;
+  user-select: none;
+  --step-a-delay: 0.2s;
   --step-a-duration: 0.65s;
   --step-b-delay: 0.5s;
   --step-b-duration: 0.75s;
@@ -15,13 +16,21 @@
   & {
     & > .logo {
       transition: transform var(--step-c-duration) var(--step-c-delay), filter var(--step-c-duration) var(--step-c-delay);
+      transform: scale(1);
+      filter: blur(0rem) opacity(1);
     }
     & > .title {
       transition: transform var(--step-b-duration) var(--step-b-delay), filter var(--step-b-duration) var(--step-b-delay);
+      transform: translateX(0%);
+      filter: blur(0rem) opacity(1);
     }
     & > .background {
+      transform: scale(1);
+      filter: blur(0rem) brightness(1);
     }
     & > .menu {
+      transform: scale(1);
+      filter: blur(0rem) opacity(1);
     }
   }
   &.ready {

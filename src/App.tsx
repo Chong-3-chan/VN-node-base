@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import logo from './logo.svg';
-import Page, { Pages } from './pages';
+import { Pages } from './pages';
 import './App.less';
 import { useDTJ } from './public/handle/hooks';
 import { tipsGroupRecord } from './data/data';
 import { LoadingPProps } from './pages/LoadingP';
-import { ActivePageEnum, FXPhase, usePageState } from './pageState';
+import { ActivePage, FXPhase, usePageState } from './pageState';
 import { PageStateProvider } from './pageState';
 // import { dbh } from './handle/IndexedDB';
 
@@ -13,10 +13,10 @@ function Test() {
   const { pageState, pageAction } = usePageState();
   // const [count, setCount] = useState(0);
   const handle = (e: number | undefined) => {
-    pageAction.setActivePage(ActivePageEnum.MainP, e);
+    pageAction.setActivePage('MainP', e);
 
     // setCount((e) => e + 1);
-    // // pageAction.setActivePage(ActivePageEnum.MainP);
+    // // pageAction.setActivePage('MainP');
     // dbh.get('Sentence',888).then(console.log);
     // console.log(pageState.LoadingPProps);
     // console.log(timeAsync(()=>dbh.getMRange('Sentence', { lower: 0, upper: 0x10000000 }).then(console.log)));
@@ -24,13 +24,14 @@ function Test() {
   // if (countt !== count) countt = count;
   return (
     <div style={{ position: 'fixed', display: 'flex', zIndex: 10000 }}>
-      {<button onClick={() => pageAction.setActivePage(ActivePageEnum.HomeP)}>HomeP</button>}
+      {<button onClick={() => pageAction.setActivePage('HomeP')}>HomeP</button>}
+      {<button onClick={() => pageAction.setActivePage('InfoP')}>InfoP</button>}
       {['00000000', '00000003', '00000007', '01000000'].map((e, i) => (
         <button onClick={() => handle(parseInt(e, 16))} key={i}>
           {'0x' + e}
         </button>
       ))}
-      {
+      {/* {
         <button
           onClick={() =>
             pageAction.callDialog({
@@ -52,7 +53,7 @@ function Test() {
         >
           dialog测试
         </button>
-      }
+      } */}
 
       {
         <button
@@ -92,7 +93,7 @@ function App() {
     <div className="App" ref={ref}>
       <PageStateProvider parentRef={ref}>
         <Pages />
-        <Test />
+        {/* <Test /> */}
       </PageStateProvider>
     </div>
   );

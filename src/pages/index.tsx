@@ -2,17 +2,20 @@ import { FC } from 'react';
 import HomeP from './HomeP';
 import LoadingP from './LoadingP';
 import './index.less';
-import { ActivePageEnum, usePageState } from '../pageState';
+import { ActivePage, usePageState } from '../pageState';
 import { MainP } from './MainP';
+import { InfoP } from './InfoP';
 
 export const Pages: FC = () => {
   const { pageState, pageAction } = usePageState();
   const getPage = () => {
     switch (pageState.activePage) {
-      case ActivePageEnum.HomeP:
+      case 'HomeP':
         return <HomeP />;
-      case ActivePageEnum.MainP:
+      case 'MainP':
         return <MainP />;
+      case 'InfoP':
+        return <InfoP />;
       case null:
         return <></>;
     }
@@ -20,16 +23,7 @@ export const Pages: FC = () => {
   return (
     <>
       {getPage()}
-      {pageState.LoadingPProps && (
-        <LoadingP
-          {...pageState.LoadingPProps!}
-        />
-      )}
+      {pageState.LoadingPProps && <LoadingP {...pageState.LoadingPProps!} />}
     </>
   );
-};
-
-export default {
-  HomeP,
-  LoadingP,
 };

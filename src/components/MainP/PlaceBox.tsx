@@ -35,14 +35,14 @@ export const PlaceBox: FC<PlaceBoxProps> = ({ place, flags: [done], phase, force
   return (
     <>
       <div className={classNames('place-box', 'last', acting && coverSrc === void 0 ? 'out' : void 0)} onAnimationEnd={updateDone} key={lastPlace}>
-        <img src={lastPlaceSrcRef.current}></img>
+        <img draggable={false} src={lastPlaceSrcRef.current}></img>
       </div>
       <div
         className={classNames('place-box', 'hide', acting && coverSrc !== void 0 ? 'in' : void 0)}
         onAnimationEnd={updateDone}
         key={lastPlace !== place ? place : ''}
       >
-        <img src={coverSrc}></img>
+        <img draggable={false} src={coverSrc}></img>
       </div>
     </>
   );

@@ -6,6 +6,7 @@ import './TextBar.less';
 import { CharaInfo } from '../../class/Records';
 import { getSrc } from '../../data/getData';
 import { classNames } from '../../public/handle';
+import { getOptions } from '../../data/globalSave';
 
 type FlowingTextProps = {
   text: string;
@@ -19,6 +20,7 @@ export const FlowingText: FC<FlowingTextProps> = ({ text, flags: [init, done], p
     updateInit = () => init(true);
   const [displayLength, setDisplayLength] = useState(0);
   const intervalRef = useRef<NodeJS.Timer | null>(null);
+  const options = getOptions();
   useLayoutEffect(() => {
     if (!initFlag) {
       setDisplayLength(0);
@@ -28,7 +30,11 @@ export const FlowingText: FC<FlowingTextProps> = ({ text, flags: [init, done], p
   useEffect(() => {
     if (initFlag && phase === MainPhase.text) {
       clearInterval(intervalRef.current!);
-      intervalRef.current = setInterval(() => setDisplayLength((e) => e + 1), text.length > 0 ? Math.min(50, 300 / text.length) : 50);
+      const charDelay = (10 - options.text_appearSpeed) * 25;
+      intervalRef.current = setInterval(
+        () => setDisplayLength((e) => e + 1),
+        text.length > 0 ? Math.min(charDelay, (6 * charDelay) / text.length) : charDelay
+      );
     }
     // from options 设置延迟等
   }, [phase, initFlag]);
@@ -77,7 +83,7 @@ export const TextBar: FC<TextBarProps> = ({ charaKey, FlowingTextProps, handleGo
         </div>
         <div className="body" onClick={handleGoNextSentence}>
           <div className={classNames('chara-avatar', avatarChanged ? 'grey' : void 0)}>
-            <img src={avatarSrc.current} />
+            <img draggable={false} src={avatarSrc.current} />
           </div>
           <FlowingText {...FlowingTextProps} />
         </div>

@@ -1,5 +1,5 @@
 import { VN } from '../class/Book';
-import { CharaInfo, FileInfo, PackageInfo, TipsGroup } from '../class/Records';
+import { CharaInfo, FileInfo, InfoItem, PackageInfo, TipsGroup } from '../class/Records';
 import { dataURL, resourceBasePath } from '../config';
 import { deepClone } from '../public/handle';
 import { dbh } from '../public/handle/IndexedDB';
@@ -22,7 +22,7 @@ function time(fun: () => any): number {
 }
 export async function getData() {
   const dataobj = await getDataObject();
-  const { book, file, packagePath, chara, tipsGroup, homeResource } = dataobj;
+  const { book, file, packagePath, chara, tipsGroup, homeResource, information } = dataobj;
   console.log(dataobj);
 
   {
@@ -92,6 +92,13 @@ export async function getData() {
     });
   }
 
+  {
+    const readInfo: Record<string, any> = information;
+    Data.KKVRecord.push(
+      Data.infoRecord,
+      Object.entries(readInfo).map((e) => new InfoItem(...e))
+    );
+  }
   console.log(Data);
 
   // Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async (e) => {
