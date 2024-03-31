@@ -33,7 +33,8 @@ export type SentenceState = {
   BGM?: string | null;
 
   voice?: string | null;
-  choice?: [type: 'para' | 'story', nextAny: string, text: string][] | null;
+  choose?: [type: 'para' | 'story', nextAny: string, text: string][] | null;
+  bookVals?: Record<string, number> | null;
   loadList?: string[];
 };
 export interface EXStaticSentence extends VN.StaticSentence {
@@ -46,7 +47,7 @@ interface HomeResource {
   BGM: string;
   backgroundImage: string;
   booksCover: Record<string, string>;
-  backgroundImageList: [Checker, string][];
+  backgroundGroupList: [Checker, [string, string]][];
   elements: {
     title: {
       fileKey: string;
@@ -59,8 +60,8 @@ interface HomeResource {
 }
 export const homeResource: HomeResource = {
   BGM: '_H_BGM_0',
-  backgroundImageList: [
-    [new Checker(['!', [], []]), '_H_BG_1'],
+  backgroundGroupList: [
+    [new Checker(['!', [], []]), ['_H_BG_1', '_H_BGM_1']],
     //优先选择最后一个通过check的图片
   ],
   backgroundImage: '_H_BG_1',

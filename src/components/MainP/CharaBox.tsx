@@ -256,7 +256,7 @@ export const CharaBox: FC<CharaBoxProps> = ({ charas, flags: [init, done], phase
         const [moveClass, moveProps] = (() => {
           if (chara?.move && charaBoxPhase === CharaBoxPhase.move && AnimationEndMemo.current.move[k] !== void 0) {
             if (AnimationEndMemo.current.move[k][moveCount] !== void 0) {
-              console.warn(chara);
+              // console.warn(chara);
               if (chara?.move![moveCount] === void 0) throw new Error(`获取moveClass失败`);
               return [`move-${chara.move[moveCount][0]}`, chara.move[moveCount]];
             }

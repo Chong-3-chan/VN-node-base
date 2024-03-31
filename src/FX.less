@@ -4,9 +4,15 @@
   // height: 50%;
   height: 100%;
   width: 100%;
-  z-index: 100;
+  z-index: 1001;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #ddd;
+  font-size: 0.4rem;
   &.none {
     background-color: transparent;
+    opacity: 0;
     display: none;
   }
   // & > div {
@@ -16,46 +22,54 @@
   &.transition-black-full {
     --duration-in: 1000ms;
     --duration-out: 1000ms;
-    background-color: transparent;
+    background-color: black;
     @keyframes transition-black-full-in {
       0% {
-        background-color: transparent;
+        opacity: 0;
+        // background-color: transparent;
         backdrop-filter: blur(0rem);
       }
       100% {
-        background-color: black;
+        opacity: 1;
+        // background-color: black;
         backdrop-filter: blur(1rem);
       }
     }
     @keyframes transition-black-full-out {
       0% {
-        background-color: black;
+        opacity: 1;
+        // background-color: black;
         backdrop-filter: blur(1rem);
       }
       100% {
-        background-color: transparent;
+        opacity: 0;
+        // background-color: transparent;
         backdrop-filter: blur(0rem);
       }
     }
     &.in {
-      background-color: transparent;
+      opacity: 0;
+      // background-color: transparent;
       backdrop-filter: blur(0rem);
       animation-play-state: running;
       animation: transition-black-full-in var(--duration-in) ease-in-out forwards;
     }
     &.keep {
-      background-color: black;
+      opacity: 1;
+      // background-color: black;
       backdrop-filter: blur(1rem);
       animation-play-state: paused;
     }
     &.out {
-      background-color: black;
+      opacity: 1;
+      // background-color: black;
       backdrop-filter: blur(1rem);
       animation-play-state: running;
       animation: transition-black-full-out var(--duration-out) ease-in-out forwards;
     }
     &.done {
-      background-color: transparent;
+      opacity: 0;
+      // background-color: transparent;
       backdrop-filter: blur(0rem);
       display: none;
     }

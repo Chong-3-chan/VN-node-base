@@ -16,7 +16,7 @@
   --loading-mask-svg: url('@{img}/logo.svg');
   --back-dx: 0rem;
   --back-dy: 0rem;
-  --transition-delay-short: .75s;
+  --transition-delay-short: 0.75s;
   --transition-delay-long: 1.25s;
   --tips-switch-delay: 0.3s;
   --background: radial-gradient(transparent 93%, rgba(var(--style-color2-value), 0.24) 94%) 1rem 1rem,
@@ -218,8 +218,14 @@
         left: 0.3rem;
         font-size: var(--font-size-tips-text);
         line-height: calc(var(--font-size-tips-text) + 0.1rem);
-        max-width: 64%;
+        max-width: 70%;
         text-indent: 0.3rem;
+        & > p {
+          margin: 0;
+          &:not(:first-child) {
+            margin-top: 0.4em;
+          }
+        }
 
         &.out {
           filter: opacity(0);

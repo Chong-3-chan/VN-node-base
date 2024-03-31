@@ -23,7 +23,7 @@ export const Sound: FC<SoundProps> = ({ display, sound, volume, fade, loop }) =>
     else {
       const soundText = !sound ? '' : sound;
       return (
-        <div className={classNames('Sound', !show ? 'hide' : void 0)}>
+        <div className={classNames('Sound', !show || !soundText ? 'hide' : void 0)}>
           <StrokedText text={soundText} backColor="rgb(96,96,192)" frontColor="#eee"></StrokedText>
         </div>
       );

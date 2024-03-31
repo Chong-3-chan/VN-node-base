@@ -8,7 +8,7 @@ import { CGBox } from '../components/MainP/CGBox';
 import { CharaBox } from '../components/MainP/CharaBox';
 import { PlaceBox } from '../components/MainP/PlaceBox';
 import { TextBar } from '../components/MainP/TextBar';
-import { Choice } from '../components/MainP/Choice';
+import { Choose } from '../components/MainP/Choose';
 import { ControlButtonsBarBox } from '../components/MainP/ControlButtonsBarBox';
 import { HistoryView } from '../components/MainP/HistoryView';
 import { getOptions, updateGlobalSave } from '../data/globalSave';
@@ -17,6 +17,8 @@ import { QsaveloadThrottle, deepClone } from '../public/handle';
 import { VN } from '../class/Book';
 import { Sound } from '../components/public/Sound';
 import OptionsP from '../components/public/OptionsP';
+import { Player } from '../class/Sound';
+import { getSrc } from '../data/getData';
 
 export type MainPMode = 'auto' | 'skip' | 'default';
 export type MainPCoverPage = 'SaveP' | 'HistoryView' | 'OptionsP' | null;
@@ -84,22 +86,29 @@ export const MainP: FC = (props) => {
   const [, refresh] = useReducer((e) => e + 1, 0);
   const options = getOptions();
   const [QsaveDoneFlag, setQsaveDoneFlag] = useState(false);
-
+  // const [bookVal, setBookVal] = useState<Record<string, number>>({});
+  // const [voiceEnded, setVoiceEnded] = useState(true);
   const [
     phase,
     {
       [MainPhase.act]: [actDone],
-      [MainPhase.text]: [textInit, textDone],
-      [MainPhase.choice]: [choiceDone],
+      [MainPhase.text]: [textInit, textDone, voiceEnded],
+      [MainPhase.choose]: [chooseDone],
       [MainPhase.done]: [],
     },
     reset,
   ] = useDTJ<MainPhase>({
     [MainPhase.act]: 1,
-    [MainPhase.text]: 2,
-    [MainPhase.choice]: 1,
+    [MainPhase.text]: 3,
+    [MainPhase.choose]: 1,
     [MainPhase.done]: 0,
   });
+
+  const voicePlayer = useMemo(() => {
+    const re = new Player(options.volume_all * options.volume_BGM);
+    re.onended = () => voiceEnded(true);
+    return re;
+  }, []);
   const currentSentence = useMemo(() => {
     reset();
     QsaveDoneFlag && setQsaveDoneFlag(false);
@@ -115,8 +124,10 @@ export const MainP: FC = (props) => {
     if (isSkipMode || skipTransfrom) {
       // console.log('date1', Date.now() % 10000, phase);
       if (phase === MainPhase.act) actDone(true);
-      else if (phase === MainPhase.text) textDone(true);
-      else !isSkipMode && setSkipTransfrom(false);
+      else if (phase === MainPhase.text) {
+        textDone(true);
+        voiceEnded(true);
+      } else !isSkipMode && setSkipTransfrom(false);
     }
   }, [skipTransfrom, phase, isSkipMode]);
   useEffect(() => {
@@ -140,13 +151,22 @@ export const MainP: FC = (props) => {
   useEffect(() => {
     const todoMap: Record<MainPhase, () => void> = {
       [MainPhase.act]: function (): void {
-        updateGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, time: Date.now() });
+        updateGlobalSave('autoSave', { sentenceID: pageState.sentenceID!, time: Date.now(), bookVals: pageState.bookValsCache });
         updateGlobalSave('readStoryPath', pageState.currentKeys.storyPath!);
       },
-      [MainPhase.text]: function (): void {},
-      [MainPhase.choice]: function (): void {},
+      [MainPhase.text]: function (): void {
+        const voiceKey = currentState?.voice;
+        // console.log(voiceKey);
+        if (voiceKey) voicePlayer.play(getSrc(voiceKey));
+        else voiceEnded(true);
+      },
+      [MainPhase.choose]: function (): void {},
       [MainPhase.done]: function (): void {
         // pageAction.getSave(Math.random() < 0.5 ? 3 : 0).then((e) => pageAction.save(e));
+        if (currentState!.bookVals) {
+          // console.log(currentState!.bookVals.val1);
+          pageAction.updateBookVals(currentState!.bookVals);
+        }
         if (isAutoMode) {
           setAutoPlayTimeOut(
             setTimeout(() => {
@@ -156,7 +176,7 @@ export const MainP: FC = (props) => {
             // from options
           );
         } else if (isSkipMode) {
-          handleGoNextSentence(void 0, true);
+          !currentState!.choose && handleGoNextSentence(void 0, true);
         }
       },
     };
@@ -184,26 +204,27 @@ export const MainP: FC = (props) => {
       }
 
       // console.warn(force, !force && phase !== MainPhase.done, phase);
-      if (!force && phase !== MainPhase.done) {
+      if (!force && phase !== MainPhase.done && [actDone, textInit, textDone, chooseDone].some((e) => !e())) {
         // console.log('skip');
         handleSkipTransfrom();
       } else {
         if (nextSentenceID !== void 0) {
-          // choice功能专用
           const nextStoryID = VN.decodeStaticSentenceID(nextSentenceID).staticStoryID,
             currentStoryID = pageState.currentObjs.story!.ID;
           if (currentStoryID === void 0) throw new Error(`handleGoNextSentence(): 获取当前故事ID失败。`);
           if (nextStoryID !== currentStoryID) {
             updateGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
+            pageAction.setSentenceID(nextSentenceID, pageState.bookVals);
+          } else {
+            pageAction.setSentenceID(nextSentenceID, pageState.bookValsCache);
           }
-          pageAction.setSentenceID(nextSentenceID);
           // setNextSentenceID(void 0);
         } else {
           // console.warn(pageState.currentObjs.paragraph, pageState.sentenceID);
           if (pageState.currentObjs.paragraph!.end === pageState.sentenceID) {
             pageAction.jumpToCurrentParagraphEndToStory();
             updateGlobalSave('endedStoryPath', pageState.currentKeys.storyPath!);
-          } else pageAction.setSentenceID(pageState.sentenceID! + 1);
+          } else pageAction.setSentenceID(pageState.sentenceID! + 1, pageState.bookValsCache);
         }
 
         if (!force && handleGoNextSentenceThrottle.current.on) {
@@ -215,7 +236,7 @@ export const MainP: FC = (props) => {
         // 限制了阅读速度
       }
     },
-    [autoPlayTimeOut, phase]
+    [autoPlayTimeOut, pageAction, phase]
   );
 
   const handleLoadSave = useCallback(
@@ -227,11 +248,11 @@ export const MainP: FC = (props) => {
         handleSkipTransfrom,
       });
     },
-    [handleSkipTransfrom]
+    [handleSkipTransfrom, pageAction]
   );
-  useEffect(() => {
-    console.log(currentSentence);
-  }, [currentSentence]);
+  // useEffect(() => {
+  //   console.log(currentSentence);
+  // }, [currentSentence]);
   // console.log([
   //   phase,
   //   deepClone({
@@ -240,7 +261,7 @@ export const MainP: FC = (props) => {
   //     update: [placeDone, charaInit, charaDone, CGDone].map((e) => e()),
   //   }),
   // ]);
-  console.log(options.volume_BGM);
+  // console.log(pageState.bookVals);
   const forceUseLastState = phase !== MainPhase.act && skipTransfrom;
 
   const MainPRef = useRef<HTMLDivElement>(null);
@@ -302,7 +323,7 @@ export const MainP: FC = (props) => {
         },
       ],
     }),
-    [QsaveDoneFlag, mode]
+    [QsaveDoneFlag, handleSkipTransfrom, mode, pageAction]
   );
   const controlBarFns = useMemo<[text: string, fn: (() => void) | void, classNamesList?: (string | void)[] | void][]>(
     () => [
@@ -341,7 +362,6 @@ export const MainP: FC = (props) => {
       ref={MainPRef}
       tabIndex={0}
       onKeyDown={(e) => {
-        console.log(e.keyCode);
         keyFns[e.keyCode]?.[0]?.();
       }}
       onKeyUp={(e) => {
@@ -357,13 +377,13 @@ export const MainP: FC = (props) => {
         charaKey={currentSentence.charaKey}
         handleGoNextSentence={() => requestAnimationFrame(() => handleGoNextSentence())}
       />
-      <Choice choice={currentSentence.lastState?.choice} flags={[choiceDone]} phase={phase} handleGoNextSentence={handleGoNextSentence}></Choice>
+      <Choose choose={currentSentence.lastState?.choose} flags={[chooseDone]} phase={phase} handleGoNextSentence={handleGoNextSentence}></Choose>
+
       <ControlButtonsBarBox controlBarFns={controlBarFns} mode={mode} />
       <HistoryView {...{ coverPage, setCoverPage, handleGoNextSentence, handleSkipTransfrom, setMode }} />
       <SaveP {...{ coverPage, setCoverPage, setMode, handleLoadSave }} />
       <OptionsP {...{ coverPage, setCoverPage, setMode, refresh }} />
       <Sound display={true} sound={currentState?.BGM} volume={options.volume_all * options.volume_BGM} fade={true} loop={true} />
-      <Sound display={false} sound={currentState?.voice} volume={options.volume_all * options.volume_voice} fade={false} loop={false} />
     </div>
   );
 };

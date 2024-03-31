@@ -16,6 +16,7 @@ export class Player {
   audioRecord: Record<number, { volume: number; audio: HTMLAudioElement; animationFrame?: number }> = {};
   count: number = 0;
   fade: boolean = false;
+  onended?: () => void;
   setVolume(volume: number) {
     this.volume = volume / 100;
     Object.entries(this.audioRecord).forEach(([key, value]) => {
@@ -82,7 +83,9 @@ export class Player {
       const fadeIn = () => {
         if (this.audioRecord[index] !== void 0) {
           this.audioRecord[index].animationFrame === void 0 && (this.audioRecord[index].animationFrame = requestAnimationFrame(volumeUp));
-          audio.play().catch(() => playCallback!.push(() => audio.play()));
+          audio.play().catch((e) => {
+            if (e.code === 0) playCallback!.push(() => audio.play());
+          });
         }
       };
       Object.keys(this.audioRecord).length ? setTimeout(fadeIn, fadeDelay) : fadeIn();
@@ -90,11 +93,14 @@ export class Player {
       this.allFadeOut(0);
       this.audioRecord[index] = { volume: 1, audio };
       audio.volume = this.audioRecord[index].volume * this.volume;
-      audio.play().catch(() => playCallback!.push(() => audio.play()));
+      audio.play().catch((e) => {
+        if (e.code === 0) playCallback!.push(() => audio.play());
+      });
     }
 
     loop !== void 0 && (audio.loop = loop);
     audio.onended = () => {
+      this.onended?.();
       const { animationFrame } = this.audioRecord[index];
       if (animationFrame !== void 0) cancelAnimationFrame(animationFrame);
       audio.onended = null;
@@ -112,10 +118,10 @@ export class Player {
   }
 }
 export function play(src: string, volume: number) {
-  if (!src) throw new Error(`play(): src为空`);
+  // if (!src) throw new Error(`play(): src为空`);
   const audio = new Audio(src);
   // pool.push(audio);
-
   audio.volume = volume / 100;
-  audio.play();
+  if (src) audio.play();
+  return audio;
 }

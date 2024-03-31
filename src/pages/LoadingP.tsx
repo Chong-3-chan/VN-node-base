@@ -237,7 +237,7 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
           };
           event.addEventListener('transitionend', onTransitionEnd);
         } else {
-          console.warn('怎么会没找到ref？？');
+          console.warn('怎么会没找到ref？');
           setTimeout(() => {
             delay_in(true);
           }, 1500);
@@ -251,17 +251,22 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
       [LoadingPPhase.out]: () => {
         if (logoMaskRef.current) {
           const event = logoMaskRef.current;
+          let timeout = setTimeout(() => {
+            delay_out(true);
+            event.removeEventListener('transitionend', onTransitionEnd);
+          }, 1500);
           const onTransitionEnd = function (e: TransitionEvent) {
             // console.log(e);
             // if (e.propertyName === 'filter') {
             if (e.propertyName === 'transform') {
+              clearTimeout(timeout);
               delay_out(true);
               event.removeEventListener('transitionend', onTransitionEnd);
             }
           };
           event.addEventListener('transitionend', onTransitionEnd);
         } else {
-          console.warn('怎么会没找到ref？？');
+          console.warn('怎么会没找到ref？');
           setTimeout(() => {
             delay_out(true);
           }, 1500);
@@ -273,7 +278,7 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
     };
     const todo = todoMap[phase];
     todo !== null && todo();
-  }, [phase]);
+  }, [phase, pageAction]);
   useEffect(() => {
     // 外部传入的步骤回调
     const todos = onStepCaseRef.current?.[phase];
@@ -329,7 +334,11 @@ export const LoadingP: FC<LoadingPProps> = ({ onStepCase, loadList, tips, title,
               >
                 {tipsRef.current[tipsNo[0]].title}
               </div>
-              <div className={['tip-text', ...(tipsNo[0] !== tipsNo[1] ? ['out'] : [])].join(' ')}>{tipsRef.current[tipsNo[0]].text}</div>
+              <div className={['tip-text', ...(tipsNo[0] !== tipsNo[1] ? ['out'] : [])].join(' ')}>
+                {tipsRef.current[tipsNo[0]].text.split('\n').map((e, i) => (
+                  <p key={i}>{e}</p>
+                ))}
+              </div>
             </>
           )}
           <div

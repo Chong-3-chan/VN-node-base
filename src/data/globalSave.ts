@@ -4,7 +4,7 @@ interface InfoData {
   readStoryPath: string[] | null;
   endedStoryPath: string[] | null;
   options: Partial<options_FULL> | null;
-  autoSave: { sentenceID: number; time: number } | null;
+  autoSave: { sentenceID: number; time: number; bookVals: Record<string, number> } | null;
   checkKeyMap: Record<string, boolean> | null;
 } // TODO: 完善属性type
 interface InfoData_updateProps {
@@ -15,6 +15,7 @@ interface InfoData_updateProps {
     {
       sentenceID: number;
       time: number;
+      bookVals: Record<string, number>;
     }
   ];
   checkKeyMap: [string, boolean];
@@ -179,18 +180,21 @@ export class Checker {
   static propsCheck(args_0: any) {
     if (typeof args_0 === 'string') {
       return true;
-    } else if (Array.isArray(args_0) && args_0.length === 3 && ['&', '|', '!'].includes(args_0[0])) {
-      if (
-        [args_0[1], args_0[2]].every(
-          (e) =>
-            e.length === 0 ||
-            (e.length === 3 &&
-              ['&', '|', '!'].includes(e[0]) &&
-              Array.isArray(e[1]) &&
-              [e[1], e[2]].every((e: any[]) => e.every((ee) => typeof ee === 'string')))
+    } else if (Array.isArray(args_0)) {
+      if (args_0.length === 0) return true;
+      if (args_0.length === 3 && ['&', '|', '!'].includes(args_0[0])) {
+        if (
+          [args_0[1], args_0[2]].every(
+            (e) =>
+              e.length === 0 ||
+              (e.length === 3 &&
+                ['&', '|', '!'].includes(e[0]) &&
+                Array.isArray(e[1]) &&
+                [e[1], e[2]].every((e: any[]) => e.every((ee) => typeof ee === 'string')))
+          )
         )
-      )
-        return true;
+          return true;
+      }
     } else return false;
   }
   constructor(keyName: string);

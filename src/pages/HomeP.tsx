@@ -21,8 +21,14 @@ export const HomeP: FC = (props) => {
   useLayoutEffect(() => {
     pageState.initDone && setReady(true);
   }, [pageState.initDone]);
-  const handleLoadSave = useCallback((ID: number) => {
-    pageAction.loadSave(ID, { handleClose: () => setCoverPage(null) });
+  const handleLoadSave = useCallback(
+    (ID: number) => {
+      pageAction.loadSave(ID, { handleClose: () => setCoverPage(null) });
+    },
+    [pageAction]
+  );
+  useEffect(() => {
+    pageAction.initBookValsCache();
   }, []);
   return (
     <div id="HomeP" className={classNames(!ready ? 'ready' : '')}>
@@ -34,7 +40,7 @@ export const HomeP: FC = (props) => {
           {'新的开始'}
         </div>
         {autoSave && (
-          <div className="menu-item" onClick={() => pageAction.setSentenceID(autoSave.sentenceID)}>
+          <div className="menu-item" onClick={() => pageAction.setSentenceID(autoSave.sentenceID, autoSave.bookVals)}>
             {'继续'}
           </div>
         )}

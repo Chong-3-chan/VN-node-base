@@ -1,5 +1,5 @@
 import { VN } from '../class/Book';
-import { CharaInfo, FileInfo, InfoItem, PackageInfo, TipsGroup } from '../class/Records';
+import { CharaInfo, DBfile, FileInfo, InfoItem, PackageInfo, TipsGroup } from '../class/Records';
 import { dataURL, resourceBasePath } from '../config';
 import { deepClone } from '../public/handle';
 import { dbh } from '../public/handle/IndexedDB';
@@ -67,26 +67,25 @@ export async function getData() {
   }
 
   {
-    const readHomeResource: Pick<typeof Data.homeResource, 'BGM' | 'booksCover' | 'backgroundImageList' | 'elements' | 'backgroundImage'> = {
+    const readHomeResource: Pick<typeof Data.homeResource, 'BGM' | 'booksCover' | 'backgroundGroupList' | 'elements' | 'backgroundImage'> = {
       BGM: homeResource.BGM,
       booksCover: Object.fromEntries(Object.values(Data.staticBookRecord).map((e) => [e.key, e.cover])),
-      backgroundImageList: homeResource.backgroundImageList.map(([c, v]: any) => [new Checker(c), v]),
+      backgroundGroupList: homeResource.backgroundGroupList.map(([c, v]: any) => [new Checker(c), v]),
       elements: Object.fromEntries(Object.entries(homeResource.elements).map(([k, v]) => [k, { fileKey: v }])) as any,
       backgroundImage: homeResource.backgroundImage,
     };
-    const lastbackgroundImage = readHomeResource.backgroundImageList.findLast!(([c]) => c.check())?.[1];
-    if (lastbackgroundImage) readHomeResource.backgroundImage = lastbackgroundImage;
+    const [lastbackgroundImage, lastBGM] = readHomeResource.backgroundGroupList.findLast!(([c]) => c.check())?.[1]!;
+    readHomeResource.backgroundImage = lastbackgroundImage;
+    readHomeResource.BGM = lastBGM;
 
     Object.assign(Data.homeResource, readHomeResource);
     Object.defineProperty(Data.homeResource, 'loadList', {
       get() {
-        const BGM = Data.homeResource.BGM;
         const covers = Object.values(Data.homeResource.booksCover);
         const elements = Object.values(Data.homeResource.elements).map((e) => e.fileKey);
-        let backgroundImage;
-        const lastbackgroundImage = Data.homeResource.backgroundImageList.findLast!(([c]) => c.check())?.[1];
-        if (lastbackgroundImage) Data.homeResource.backgroundImage = lastbackgroundImage;
-        backgroundImage = Data.homeResource.backgroundImage;
+        const [lastbackgroundImage, lastBGM] = readHomeResource.backgroundGroupList.findLast!(([c]) => c.check())?.[1]!;
+        const backgroundImage = (Data.homeResource.backgroundImage = lastbackgroundImage);
+        const BGM = (Data.homeResource.BGM = lastBGM);
         return [BGM, ...covers, ...elements, backgroundImage];
       },
     });
@@ -100,41 +99,6 @@ export async function getData() {
     );
   }
   console.log(Data);
-
-  // Promise.all(Object.values(Data.packageRecord).map(packageInfo => packageInfo.load())).then(async (e) => {
-  //     console.warn(dataobj, Data, e,'any')
-  //     const fileKeys = Object.keys(Data.fileRecord)
-  //     const randomKeys = Array(10).fill(null).map((e, i) => fileKeys[i])
-  //     console.warn(await timeAsync(async () => {
-  //         const code = await FileInfo.getFilesBase64([...randomKeys])
-  //         console.log(code, CharaInfo.getPicFilekey('12', '01'))
-  //         return code
-  //     }))
-  // })
-  // const ck = new Checker(['&', ['|', [], ['2', '1', '3', '4']], ['&', [], []]])
-  // alert(ck.check())
-  // const randomKV = Array(100000).fill(null).map(() => [Math.random().toString(36).slice(2), Math.random()] as [string, number])
-  // console.warn(time(() => {
-  //     const map: any = {}
-  //     randomKV.forEach(e => {
-  //         map[e[0]] = e[1]
-  //     });
-  // }))
-  // alert(await time(() => {
-  //     // const pa = []
-  //     // for (let i = 0; i < 100; ++i)pa.push(dbh.put('Book', { ID: i, gg: new Array(i).fill('ab').join('') }))
-  //     // return Promise.all(pa)
-  //     // let g = new Promise((a)=>a(null));
-  //     // for (let i = 0; i < 100; ++i)g = g.then(()=>dbh.put('Book', { ID: i, gg: new Array(i).fill('ab').join('') }))
-  //     // return g
-  //     return dbh.deleteM('Book', Array(10).fill(null).map((e, i) => i))
-  // }))
-  // alert(await time(() => {
-  //     const pa = []
-  //     for (let i = 0; i < 100; ++i)pa.push(dbh.delete('Book', i))
-  //     return Promise.all(pa)
-  // }))
-  // write file&packageRecord
 }
 
 export async function updateFileCache(nextCacheNeedFileKeys: string[]) {
@@ -166,13 +130,24 @@ export function getSrc(fileKey: string) {
   if (record?.code === void 0) throw new Error(`getSrc(): 没有命中缓存 ${fileKey}`);
   return record.code;
 }
+export async function getSrcAsync(fileKey: string) {
+  return ((await dbh.get('Files', Data.fileRecord[fileKey].getPath())) as DBfile).code;
+}
 export namespace EXStaticSentence {
-  const uniqueFns = ['place', 'CG', 'CGOut', 'BGM', 'voice', 'choice'];
+  const uniqueFns = ['place', 'CG', 'CGOut', 'BGM', 'voice', 'choose'];
   const lazyFns = ['place', 'CG', 'CGOut', 'BGM'];
   const map: Record<string, (state: Data.EXStaticSentence['lastState'], props: any) => void> = {
     place: function (state, props: any[]) {
       if (state!.place !== void 0) throw new Error(`一个语句出现多个place`);
       state!.place = props[0] ?? null;
+    },
+    CG: function (state, props: any[]) {
+      if (state!.CG !== void 0) throw new Error(`一个语句出现多个CG/CGOut`);
+      state!.CG = props[0];
+    },
+    CGOut: function (state, props: any[]) {
+      if (state!.CG !== void 0) throw new Error(`一个语句出现多个CG/CGOut`);
+      state!.CG = null;
     },
     chara: function (state, props: [string, string, string]) {
       if ((state!.charas ??= {})[props[0]] !== void 0) throw new Error(`一个语句出现同人物(${props[0]})的多个chara/charaOut`);
@@ -184,14 +159,6 @@ export namespace EXStaticSentence {
       if ((state!.charas ??= {})[props[1]] !== void 0) throw new Error(`一个语句出现同人物的多个chara/charaOut`);
       state!.charas[props[1]] = null;
     },
-    CG: function (state, props: any[]) {
-      if (state!.CG !== void 0) throw new Error(`一个语句出现多个CG/CGOut`);
-      state!.CG = props[0];
-    },
-    CGOut: function (state, props: any[]) {
-      if (state!.CG !== void 0) throw new Error(`一个语句出现多个CG/CGOut`);
-      state!.CG = null;
-    },
     BGM: function (state, props: any[]) {
       if (state!.BGM !== void 0) throw new Error(`一个语句出现多个BGM`);
       state!.BGM = props[0] ?? null;
@@ -200,33 +167,43 @@ export namespace EXStaticSentence {
       if (state!.voice !== null) throw new Error(`一个语句出现多个voice`);
       state!.voice = props[0];
     },
-    choice: function (state, props: any[]) {
-      if (state!.choice !== null) throw new Error(`一个语句出现多个choice`);
-      state!.choice = props;
-    },
+    // choose: function ,
+    // stateDT中state.charas[charaKey]往往为空，故不能在stateDT上操作
     // charaMove: function (state, [charaKey, moveType, ...props]) {
     //   const c = state!.charas![charaKey as string];
     //   if (!c) return;
     //   (c.move ??= [])[c.move.length] = [moveType as string, ...props];
     // },
+    bookVal: function (state, props: [string, string]) {
+      state!.bookVals = state!.bookVals === void 0 ? {} : { ...state!.bookVals };
+      const [key, formula] = props;
+      // 不防注入，创作者喜欢就注入吧。。
+      // eslint-disable-next-line no-new-func
+      state!.bookVals[key] = ((bookVal: number) => new Function(`return ${formula.replaceAll('_', bookVal.toString())};`)())(
+        state!.bookVals[key] ?? 0
+      );
+    },
   };
   function writeState(base: Data.SentenceState = { loadList: [] }, sentence: Data.EXStaticSentence) {
     if (sentence.lastState) return;
     const { fns, charaKey } = sentence;
     let stateCache = deepClone(base);
     const sentenceLoadSet = new Set();
+    // eslint-disable-next-line complexity
     function handleTempStateTransform(fnGroup: [string, VN.fnProps][]) {
       stateCache = deepClone(stateCache);
       stateCache.charas !== void 0 &&
         Object.values(stateCache.charas).forEach((e) => {
           if (e?.move) delete e.move;
         });
-      const stateDT: typeof base = { voice: null, choice: null, loadList: [] };
+      const stateDT: typeof base = { voice: null, choose: null, loadList: [], bookVals: stateCache.bookVals };
       fnGroup.forEach(([fnName, props]) => {
         const todo = map[fnName];
         todo && todo(stateDT, props);
       });
+      if (stateDT.charas || stateCache.charas) stateDT.charas = Object.assign(stateCache.charas ?? {}, stateDT.charas);
       const nextState: typeof base = Object.assign(stateCache, stateDT);
+      // debugger;
       Object.assign((nextState.charas ??= {}), stateDT.charas);
       Object.entries(nextState.charas).forEach(([k, v]) => {
         if (v === null) delete nextState.charas![k];
@@ -239,6 +216,27 @@ export namespace EXStaticSentence {
         const c = nextState.charas![charaKey as string];
         if (!c) return;
         (c.move ??= [])[i] = [moveType as string, ...props];
+      });
+      const chooseFn = fnGroup.filter(([e]) => e === 'choose');
+      if (chooseFn.length > 1) console.warn(`sentence(ID: ${sentence.ID})出现了一个以上的choose`);
+      chooseFn.forEach(([, props]: [string, any[]]) => {
+        if (nextState.choose) throw new Error(`一个语句出现多个choose`);
+        nextState.choose = props.filter((e) => {
+          const ex = e[3];
+          if (!ex) return true;
+          if (ex[0] === 'check') return new Checker(ex[1]).check();
+          if (ex[0] === 'bookVal') {
+            const val = nextState.bookVals?.[ex[1][0]] ?? 0;
+            const formula = ex[1][1];
+            const fn = new Function(`return ${formula.replaceAll('_', val.toString())};`);
+            return fn();
+          }
+          console.warn(`choose参数3异常: 类型不是 "check" 或 "bookVal"`);
+          return false;
+        });
+        if (nextState.choose.length === 0) nextState.choose = void 0;
+        // nextState!.choose = props.filter((e) => (e[3] ? (e[3][0] === 'check' ? new Checker(e[3][1]).check() : true) : true))
+        // .map(e=>e[3]?.[0] === 'bookVal'?);
       });
       if (nextState.charas && Object.keys(nextState.charas).length === 0) delete nextState.charas;
 
@@ -260,35 +258,29 @@ export namespace EXStaticSentence {
     sentence.states = [];
     fns.anime.forEach((e) => sentence.states!.push(handleTempStateTransform(e)));
     sentence.lastState = Object.assign(handleTempStateTransform(fns.state), { loadList: Array.from(sentenceLoadSet) });
-    // sentence.lastState.charas && Object.values(sentence.lastState.charas).map((e: any) => (e.haha = 1));
-    // = deepClone(tempState);
-    // const newNeed = new Set(base);
   }
-  // function getParagraphBaseNeed(paragraphRecord: VN.StaticStory['paragraphRecord'], nowParagraph: VN.Paragraph) {
-  //   const { source } = nowParagraph;
-  //   if (source.length === 0) return {};
-  //   // @ts-ignore: findLastIndex
-  //   const lastGotNeedIndex = source.findLastIndex((paragraphKey: string) => Data.sentenceCache.get(paragraphRecord[paragraphKey].end)?.state);
-  //   const lastState: Data.SentenceState =
-  //     lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(paragraphRecord[source[lastGotNeedIndex]].end)!.state);
-  //   for (let i = lastGotNeedIndex + 1; i < source.length; ++i) {
-  //     for (let j = paragraphRecord[source[i]].start; j <= paragraphRecord[source[i]].end; ++j) writeState(lastState, Data.sentenceCache.get(j)!);
-  //   }
-  //   return deepClone(Data.sentenceCache.get(paragraphRecord[source[source.length - 1]].end)!.state);
-  // }
-  function getParagraphBaseNeed(paragraphRecord: VN.StaticStory['paragraphRecord'], nowParagraph: VN.Paragraph) {
+  function getParagraphBaseNeed(
+    paragraphRecord: VN.StaticStory['paragraphRecord'],
+    nowParagraph: VN.Paragraph,
+    storyBaseBookVals: Record<string, number>
+  ) {
     const { source } = nowParagraph;
-    if (source.length === 0) return {};
+    if (source.length === 0) {
+      return { bookVals: storyBaseBookVals };
+    }
     // @ts-ignore: findLastIndex
     const lastGotNeedIndex = source.findLastIndex((paragraphKey: string) => Data.sentenceCache.get(paragraphRecord[paragraphKey].end)?.state);
-    const lastState: Data.SentenceState =
+    let lastState: Data.SentenceState =
       lastGotNeedIndex === -1 ? {} : deepClone(Data.sentenceCache.get(paragraphRecord[source[lastGotNeedIndex]].end)!.lastState)!;
     for (let i = lastGotNeedIndex + 1; i < source.length; ++i) {
-      for (let j = paragraphRecord[source[i]].start; j <= paragraphRecord[source[i]].end; ++j) writeState(lastState, Data.sentenceCache.get(j)!);
+      for (let j = paragraphRecord[source[i]].start; j <= paragraphRecord[source[i]].end; ++j) {
+        writeState(lastState, Data.sentenceCache.get(j)!);
+        lastState = Data.sentenceCache.get(j)!.lastState!;
+      }
     }
     return deepClone(Data.sentenceCache.get(paragraphRecord[source[source.length - 1]].end)!.lastState);
   }
-  export function getState(ID: VN.StaticSentence['ID']) {
+  export function getState(ID: VN.StaticSentence['ID'], storyBaseBookVals: Record<string, number>) {
     const sentence = Data.sentenceCache.get(ID);
     if (sentence === void 0) throw new Error(`getState(): 不存在的句子ID: ${ID}`);
     if (sentence.lastState) return sentence.lastState!;
@@ -304,7 +296,7 @@ export namespace EXStaticSentence {
     const { paragraphRecord } = Data.staticStoryRecord[nextBook.Story_KeyIDEnum[staticStoryID]];
     const nowParagraph = Object.values(paragraphRecord).find(({ start, end }) => staticSentenceID >= start && staticSentenceID <= end);
     if (nowParagraph === void 0) throw new Error(`getState(): 未找到包含 0x${staticSentenceID.toString(16)} 的段落`);
-    const nowParagraphBaseNeed = getParagraphBaseNeed(paragraphRecord, nowParagraph);
+    const nowParagraphBaseNeed = getParagraphBaseNeed(paragraphRecord, nowParagraph, storyBaseBookVals);
     for (let i = nowParagraph.start; i <= ID; ++i) {
       const base = i === nowParagraph.start ? nowParagraphBaseNeed : Data.sentenceCache.get(i - 1)?.lastState;
       writeState(base, Data.sentenceCache.get(i)!);

@@ -7,7 +7,7 @@ import { MainP } from './MainP';
 import { InfoP } from './InfoP';
 
 export const Pages: FC = () => {
-  const { pageState, pageAction } = usePageState();
+  const { pageState } = usePageState();
   const getPage = () => {
     switch (pageState.activePage) {
       case 'HomeP':

@@ -3,12 +3,12 @@
 //   chara = 'chara',
 //   CG = 'CG',
 //   text = 'text',
-//   choice = 'choice',
+//   choose = 'choose',
 //   done = 'done',
 // }
 export enum MainPhase {
   act = 'act',
   text = 'text',
-  choice = 'choice',
+  choose = 'choose',
   done = 'done',
 }

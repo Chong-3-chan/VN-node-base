@@ -1,10 +1,15 @@
 import { FC, useEffect, useRef, useState } from 'react';
-import { EXStaticSentence, charaRecord, sentenceCache } from '../../data/data';
+import { EXStaticSentence, charaRecord, fileRecord, sentenceCache } from '../../data/data';
 import { classNames } from '../../public/handle';
 import { StrokedText } from '../public/StrokedText';
 import { FXPhase, usePageState } from '../../pageState';
 import './HistoryView.less';
 import { MainPCoverPage, MainPMode } from '../../pages/MainP';
+import { dbh } from '../../public/handle/IndexedDB';
+import { play } from '../../class/Sound';
+import { getOptions } from '../../data/globalSave';
+import { DBfile, FileInfo } from '../../class/Records';
+import { getSrcAsync } from '../../data/getData';
 type HistoryViewProps = {
   coverPage: MainPCoverPage;
   setCoverPage: React.Dispatch<React.SetStateAction<HistoryViewProps['coverPage']>>;
@@ -18,6 +23,8 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
   const [display, setDisplay] = useState(false);
   const historyViewCache = useRef<EXStaticSentence[] | null>(null);
   const historyViewBoxRef = useRef<HTMLDivElement | null>(null);
+  const options = getOptions();
+  const audioRef = useRef<HTMLAudioElement | null>();
   // const jumpFXFns = useRef<any>();
   useEffect(() => {
     if (coverPage === 'HistoryView') {
@@ -63,7 +70,7 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
                         title: '提示',
                         optionsCallback: {
                           跳转: () => {
-                            const fx = pageAction.callFX['transition-black-full']();
+                            const fx = pageAction.callFX['transition-black-full']('跳转……');
                             const nextSentenceID = e.ID;
                             fx.assignOnStepCase({
                               [FXPhase.keep]: () => {
@@ -82,10 +89,29 @@ export const HistoryView: FC<HistoryViewProps> = ({ coverPage, setCoverPage, han
                       });
                     }}
                   ></div>
-                  {e.lastState?.voice && <div className={classNames('btn', 'voice')}></div>}
+                  {e.lastState?.voice && (
+                    <div
+                      className={classNames('btn', 'voice')}
+                      onClick={async () => {
+                        if (audioRef.current) {
+                          audioRef.current.pause();
+                          audioRef.current.src = '';
+                          audioRef.current.load();
+                          audioRef.current = null;
+                        }
+                        let audio: HTMLAudioElement | null = play('', options.volume_all * options.volume_voice);
+                        audioRef.current = audio;
+                        const code = await getSrcAsync(e.lastState!.voice!);
+                        if (audioRef.current === audio) {
+                          audio.src = code;
+                          audio.play();
+                        } else audio = null;
+                      }}
+                    ></div>
+                  )}
                 </div>
                 <div className="chara-name">
-                  <StrokedText text={charaRecord[e.charaKey]?.name ?? ''}></StrokedText>
+                  <StrokedText text={charaRecord[e.charaKey]?.name ?? e.charaKey}></StrokedText>
                 </div>
               </div>
               <div className="body">

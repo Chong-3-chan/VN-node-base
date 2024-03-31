@@ -83,7 +83,7 @@ export const optionsGroups: {
     group: {
       text_appearSpeed: {
         ch: '文字出现速度',
-        defaultValue: 1,
+        defaultValue: 8,
         type: 'range',
         icon: 'speed',
         max: 10,

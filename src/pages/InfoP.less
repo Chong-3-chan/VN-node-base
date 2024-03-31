@@ -8,6 +8,7 @@
   flex-direction: row;
   flex-wrap: nowrap;
   gap: 0.3rem;
+  color: #ccc;
 }
 .InfoP .background {
   position: absolute;
@@ -30,6 +31,15 @@
   overflow-y: auto;
   overflow-x: hidden;
   border-radius: 0.05rem;
+  &:empty::after {
+    content: '- 暂无解锁档案 -';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-wrap: nowrap;
+    padding: 0.5rem;
+  }
 }
 .InfoP .info-selector::-webkit-scrollbar {
   width: 0.1rem;
@@ -62,6 +72,15 @@
   height: 8rem;
   overflow-y: auto;
   overflow-x: hidden;
+  &:empty::after {
+    content: '- 在右侧列表选择档案以进行阅读 -';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-wrap: nowrap;
+    padding: 0.5rem;
+  }
 }
 .InfoP .info-read::-webkit-scrollbar {
   width: 0.1rem;
@@ -104,6 +123,6 @@
 .InfoP .info-selector,
 .InfoP .info-read {
   /* width: 6.2rem; */
-  background-color: #8888;
+  background-color: #6668;
   animation: fade-in 0.5s ease forwards;
 }

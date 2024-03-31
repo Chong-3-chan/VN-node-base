@@ -66,7 +66,11 @@ export const ContentP: FC<ContentPProps> = ({ coverPage, setCoverPage }) => {
                   <div
                     className={classNames('book-cover-box', index === i ? 'selected' : void 0, !checkResult ? 'locked' : void 0)}
                     onClick={() => {
-                      if (checkResult) pageAction.setSentenceID(VN.encodeStaticSentenceID({ StaticBookID: ID }));
+                      if (checkResult)
+                        pageAction.setSentenceID(
+                          VN.encodeStaticSentenceID({ StaticBookID: ID }),
+                          Object.fromEntries(bookList[index][1].bookVals ?? [])
+                        );
                     }}
                     key={key}
                   >
@@ -82,7 +86,11 @@ export const ContentP: FC<ContentPProps> = ({ coverPage, setCoverPage }) => {
       <div
         className={classNames('footer', switching ? 'hide' : void 0)}
         onClick={() => {
-          if (bookList[index][1].checkResult) pageAction.setSentenceID(VN.encodeStaticSentenceID({ StaticBookID: bookList[index][1].ID }));
+          if (bookList[index][1].checkResult)
+            pageAction.setSentenceID(
+              VN.encodeStaticSentenceID({ StaticBookID: bookList[index][1].ID }),
+              Object.fromEntries(bookList[index][1].bookVals ?? [])
+            );
         }}
       >
         {footerText}

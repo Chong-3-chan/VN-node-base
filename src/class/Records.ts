@@ -11,6 +11,7 @@ export namespace FileType {
   }
 }
 
+export type DBfile = { path: string; fileName: string; packageKey: string; code: string };
 /******************************* PackageInfo ********************************/
 export interface PackageInfoLike {
   key: string;
@@ -84,7 +85,6 @@ export class PackageInfo implements PackageInfoLike {
       }
       // TODO: hit helper
       // hit DB
-      type DBfile = { path: string; fileName: string; packageKey: string; code: string };
       const fromDBfiles: DBfile[] = await dbh.getByIndex('Files', 'packageKey', this.key);
       if (fromDBfiles) {
         // TODO: 文件校验（e-tag,需要改动数据库存储信息）
@@ -276,7 +276,7 @@ export class CharaInfo {
   }
   static getAvatarFilekey(key: string): string | null {
     if (charaRecord[key] === void 0) {
-      key && console.warn(`CharaInfo.getAvatarFilekey(): 不存在的人物头像记录: ${key}`);
+      // key && console.warn(`CharaInfo.getAvatarFilekey(): 不存在的人物头像记录: ${key}`);
       return null;
     }
     return charaRecord[key].avatar ?? null;

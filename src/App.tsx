@@ -6,7 +6,6 @@ import { useDTJ } from './public/handle/hooks';
 import { tipsGroupRecord } from './data/data';
 import { LoadingPProps } from './pages/LoadingP';
 import { ActivePage, FXPhase, usePageState } from './pageState';
-import { PageStateProvider } from './pageState';
 // import { dbh } from './handle/IndexedDB';
 
 function Test() {
@@ -70,7 +69,7 @@ function Test() {
       {
         <button
           onClick={() => {
-            const { out, assignOnStepCase } = pageAction.callFX['transition-black-full'](1000, 500);
+            const { out, assignOnStepCase } = pageAction.callFX['transition-black-full'](void 0, 1000, 500);
             assignOnStepCase({
               [FXPhase.keep]: () =>
                 setTimeout(() => {
@@ -87,7 +86,7 @@ function Test() {
 }
 
 function App() {
-  const { pageState, pageAction } = usePageState();
+  const { pageState, pageAction, PageStateProvider } = usePageState();
   const ref = useRef<HTMLDivElement>(null!);
   return (
     <div className="App" ref={ref}>

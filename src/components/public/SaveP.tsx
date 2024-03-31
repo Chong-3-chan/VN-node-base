@@ -157,7 +157,7 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, handleLoadSave 
               }}
             >
               {isMainP && (
-                <div className="save" onClick={() => handleSave(ID, true)}>
+                <div className="save" onClick={() => handleSave(ID, false)}>
                   {'保存'}
                 </div>
               )}
@@ -253,39 +253,42 @@ export const SaveP: FC<SavePProps> = ({ coverPage, setCoverPage, handleLoadSave 
     }, 500);
   }, []);
 
-  const handleSave = useCallback((ID: number, replace: boolean) => {
-    if (replace) {
-      pageAction.callDialog({
-        text: `覆盖存档后，旧存档将不能找回！\n确认覆盖 ${ID} 号存档吗？`,
-        title: '存档覆盖确认',
-        optionsCallback: {
-          覆盖并保存: () => {
-            pageAction
-              .getSave(ID)
-              .then((e) => pageAction.save(e))
-              .then(() => refresh());
-            return true;
+  const handleSave = useCallback(
+    (ID: number, replace: boolean) => {
+      if (replace) {
+        pageAction.callDialog({
+          text: `覆盖存档后，旧存档将不能找回！\n确认覆盖 ${ID} 号存档吗？`,
+          title: '存档覆盖确认',
+          optionsCallback: {
+            覆盖并保存: () => {
+              pageAction
+                .getSave(ID)
+                .then((e) => pageAction.save(e))
+                .then(() => refresh());
+              return true;
+            },
+            取消: () => true,
           },
-          取消: () => true,
-        },
-      });
-    } else {
-      pageAction.callDialog({
-        text: `确认保存新存档为 ${ID} 号？`,
-        title: '存档确认',
-        optionsCallback: {
-          保存: () => {
-            pageAction
-              .getSave(ID)
-              .then((e) => pageAction.save(e))
-              .then(() => refresh());
-            return true;
-          },
-          取消: () => true,
-        },
-      });
-    }
-  }, []);
+        });
+      } else {
+        // pageAction.callDialog({
+        //   text: `确认保存新存档为 ${ID} 号？`,
+        //   title: '存档确认',
+        //   optionsCallback: {
+        //     保存: () => {
+        pageAction
+          .getSave(ID)
+          .then((e) => pageAction.save(e))
+          .then(() => refresh());
+        //       return true;
+        //     },
+        //     取消: () => true,
+        //   },
+        // });
+      }
+    },
+    [pageAction]
+  );
   return (
     <div className={classNames('SaveP', display ? void 0 : 'hide')} data-html2canvas-ignore>
       <div

@@ -27,6 +27,9 @@ export namespace VN {
         end: (v: any) => Array.isArray(v) && v.every((item) => Array.isArray(item) && item.length === 2 && item.every((e) => typeof e === 'string')),
         cover: (v: any) => typeof v === 'string',
         check: (v: any) => GlobalSave.Checker.propsCheck(v),
+        bookVals: (v: any) =>
+          Array.isArray(v) &&
+          v.every((item) => Array.isArray(item) && item.length === 2 && typeof item[0] === 'string' && typeof item[1] === 'number'),
       }),
     },
     STORY: {
@@ -217,6 +220,11 @@ export namespace VN {
             const todo = map[fnName];
             return todo !== void 0 ? todo(props) ?? null : null;
           }),
+          ...[staticSentence.fns.state].flat(1).map((e) => {
+            const [fnName, props] = e;
+            const todo = map[fnName];
+            return todo !== void 0 ? todo(props) ?? null : null;
+          }),
           CharaInfo.getAvatarFilekey(staticSentence.charaKey),
         ].filter((e) => e !== null)
       )
@@ -286,31 +294,54 @@ export namespace VN {
           throw new Error(`StaticStory构造: 读到段落结束标识不匹配于行 ${i}。读取到:\n\t${currentLine.slice(1)},\n应为:\n\t${paragraphKey}`);
 
         // fns改造: 改为从fns.state找 done?
-        const choiceFns = sentenceCache[sentenceCache.length - 1].fns.state.find(([fnName]) => fnName === 'choice');
-        if (!isEndParagraph) {
-          if (!choiceFns) throw new Error(`StaticStory构造: 异常的非end段落${key} - ${paragraphKey}: 最后一句不是选项\n${VNLines[i - 1]}`);
-          choiceFns[1].forEach(([type, nextAny, text]) => {
+        const chooseFns = sentenceCache[sentenceCache.length - 1].fns.state.find(([fnName]) => fnName === 'choose');
+        // if (!isEndParagraph) {
+        //   if (!chooseFns) throw new Error(`StaticStory构造: 异常的非end段落${key} - ${paragraphKey}: 最后一句不是选项\n${VNLines[i - 1]}`);
+        //   // chooseFns[1].forEach(([type, nextAny, text]) => {
+        //   //   if (type === 'para') {
+        //   //     const nextParagraph = nextAny;
+        //   //     (paragraphConnect.toPara[paragraphKey] ??= []).push(nextParagraph as string);
+        //   //     if (paragraphConnect.from[nextParagraph as string] !== void 0 && paragraphConnect.from[nextParagraph as string] !== paragraphKey)
+        //   //       throw new Error(`StaticStory构造: ${key} - ${nextParagraph}存在多个from`);
+        //   //     paragraphConnect.from[nextParagraph as string] = paragraphKey;
+        //   //   } else if (type === 'story') {
+        //   //     const nextStroy = nextAny;
+        //   //     (paragraphConnect.toStory[paragraphKey] ??= []).push(nextStroy as string);
+        //   //   }
+        //   // });
+        // } else if (chooseFns) {
+        //   // 在支持bookVals以允许隐藏结局后，不再限制。
+        //   // throw new Error(`StaticStory构造: 异常的end段落${key} - ${paragraphKey}: 存在choose`);
+        // } else {
+        //   this.end.push(paragraphKey);
+        //   if (endToStory) (paragraphConnect.toStory[paragraphKey] ??= []).push(endToStory);
+        // }
+
+        if (chooseFns) {
+          chooseFns[1].forEach(([type, nextAny, text]) => {
             if (type === 'para') {
               const nextParagraph = nextAny;
               (paragraphConnect.toPara[paragraphKey] ??= []).push(nextParagraph as string);
-              if (paragraphConnect.from[nextParagraph as string]) throw new Error(`StaticStory构造: ${key} - ${nextParagraph}存在多个from`);
+              if (paragraphConnect.from[nextParagraph as string] !== void 0 && paragraphConnect.from[nextParagraph as string] !== paragraphKey)
+                throw new Error(`StaticStory构造: ${key} - ${nextParagraph}存在多个from`);
               paragraphConnect.from[nextParagraph as string] = paragraphKey;
             } else if (type === 'story') {
               const nextStroy = nextAny;
               (paragraphConnect.toStory[paragraphKey] ??= []).push(nextStroy as string);
             }
           });
-        } else if (choiceFns) throw new Error(`StaticStory构造: 异常的end段落${key} - ${paragraphKey}: 存在choice`);
-        else {
+        }
+        if (isEndParagraph) {
           this.end.push(paragraphKey);
           if (endToStory) (paragraphConnect.toStory[paragraphKey] ??= []).push(endToStory);
-        }
+        } else if (!chooseFns) throw new Error(`StaticStory构造: 异常的非end段落${key} - ${paragraphKey}: 最后一句不是选项\n${VNLines[i - 1]}`);
+
         paragraphPropsCache[paragraphKey] = [paragraphStartID, paragraphEndID, endToStory];
       }
       if (rootParagraphKey! === void 0) throw new Error(`StaticStory构造: 故事 ${key} 无段落`);
       function writeSource(rootKey: string, sourceValue: string[]) {
         if (paragraphPropsCache[rootKey] === void 0)
-          throw new Error(`StaticStory构造: ${key} - ${rootKey} 段落不存在，且存在choice尝试跳转到 ${rootKey}`);
+          throw new Error(`StaticStory构造: ${key} - ${rootKey} 段落不存在，且存在choose尝试跳转到 ${rootKey}`);
         if (sourceValue.includes(rootKey)) throw new Error(`StaticStory构造: 故事 ${key} 存在段落环:\n\t${sourceValue.join('-')}-${rootKey}`);
         paragraphConnect.source[rootKey] = sourceValue;
         paragraphConnect.toPara[rootKey]?.forEach((key) => {
@@ -345,6 +376,7 @@ export namespace VN {
     end: [string, string][];
     cover: string; // homeResource's filekey
     check: GlobalSave.CheckerConstructorProps<GlobalSave.StoryCheckerMode>;
+    bookVals?: [string, number][];
     Story_KeyIDEnum: KeyIDEnum;
     constructor(ID: number, key: string, [BookVN, StoryVNMap]: [string, { [StoryKey: string]: string }]) {
       // 构造时更新Book_KeyIDEnum
@@ -355,10 +387,11 @@ export namespace VN {
         .map((l) => l.trim())
         .filter(Boolean);
 
-      const [{ start, defaultStyle, end, cover, check }] = readProps(VNLines, 'BOOK', true);
+      const [{ start, defaultStyle, end, cover, check, bookVals }] = readProps(VNLines, 'BOOK', true);
       this.start = start;
       this.defaultStyle = defaultStyle;
       this.end = end;
+      this.bookVals = bookVals;
       this.cover = cover;
       this.check = check;
 
